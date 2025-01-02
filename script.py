@@ -8,9 +8,11 @@ import math
 # Function to generate nod.xml
 def generate_nod_file(output_file):
     root = ET.Element("nodes")
-    ET.SubElement(root, "node", id="n1", x="-100", y="100", type="priority")  # NW entry
-    ET.SubElement(root, "node", id="n2", x="0", y="0", type="priority")      # Center
-    ET.SubElement(root, "node", id="n3", x="100", y="-100", type="priority") # SE exit
+    ET.SubElement(root, "node", id="center", x="0", y="0", type="priority") # Center
+    ET.SubElement(root, "node", id="n1", x="0", y="100", type="priority") # North
+    ET.SubElement(root, "node", id="n2", x="100", y="0", type="priority") # East
+    ET.SubElement(root, "node", id="n3", x="0", y="-100", type="priority") # South
+    ET.SubElement(root, "node", id="n4", x="-100", y="0", type="priority") # West
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
@@ -21,24 +23,66 @@ def generate_edg_file(output_file):
     # Define edges using a dictionary for attributes
     ET.SubElement(root, "edge", {
         "from": "n1",
-        "to": "n2",
-        "id": "1to2",
+        "to": "center",
+        "id": "north_to_center",
         "type": "3L45"
-    })  # NW to Center
+    })  # North to Center
     
     ET.SubElement(root, "edge", {
-        "from": "n2",
-        "to": "n3",
-        "id": "2to3",
+        "from": "center",
+        "to": "n1",
+        "id": "center_to_north",
         "type": "3L45"
-    })  # Center to SE
+    })  # Center to North
+
+    ET.SubElement(root, "edge", {
+        "from": "n2",
+        "to": "center",
+        "id": "east_to_center",
+        "type": "3L45"
+    })  # East to Center
+    
+    ET.SubElement(root, "edge", {
+        "from": "center",
+        "to": "n2",
+        "id": "center_to_east",
+        "type": "3L45"
+    })  # Center to East
+
+    ET.SubElement(root, "edge", {
+        "from": "n3",
+        "to": "center",
+        "id": "south_to_center",
+        "type": "3L45"
+    })  # South to Center
+    
+    ET.SubElement(root, "edge", {
+        "from": "center",
+        "to": "n3",
+        "id": "center_to_south",
+        "type": "3L45"
+    })  # Center to South
+
+    ET.SubElement(root, "edge", {
+        "from": "n4",
+        "to": "center",
+        "id": "west_to_center",
+        "type": "3L45"
+    })  # West to Center
+    
+    ET.SubElement(root, "edge", {
+        "from": "center",
+        "to": "n4",
+        "id": "center_to_west",
+        "type": "3L45"
+    })  # Center to West
+
     
     # Generate the XML tree
     tree = ET.ElementTree(root)
     
     # Write to an XML file
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
-    
     
 
 
@@ -51,12 +95,23 @@ def generate_type_file(output_file):
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
 # Function to generate rou.xml
-def generate_route_file(vehicle_tracks, output_file):
+def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping):
+    """
+    Generate Rou.XML file for SUMO using the vehicle tracking dara.
+
+    :param vehicle_tracks: Dict of detected vehicles
+    :param output_file: Path for the output file
+    :param route_mapping: Dict with the entry and exit points for route IDs.
+    """
     root = ET.Element("routes")
     ET.SubElement(root, "vType", id="car", accel="1.0", decel="5.0", sigma="0.0", length="5", maxSpeed="33.33")
     ET.SubElement(root, "vType", id="bus", accel="1.0", decel="5.0", sigma="0.0", length="15", maxSpeed="3.33")
     ET.SubElement(root, "vType", id="truck", accel="1.0", decel="5.0", sigma="0.0", length="10", maxSpeed="20")
-    route = ET.SubElement(root, "route", id="route0", edges="1to2 2to3")  # Route from NW to SE
+    # route = ET.SubElement(root, "route", id="north_to_east", edges="north_to_center center_toeast")  # Route from North->Center->East
+
+    for route_id, data in entry_exit_mapping.items():
+        route_egdes = f"{data[0]}_to_center center_to_{data[1]}"
+        ET.SubElement(root, "route", id=route_id, edges=route_egdes)  
 
     for vehicle_id, tracks in vehicle_tracks.items():
         if len(tracks) < 2:
@@ -89,6 +144,43 @@ def generate_config_file(output_file):
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
+def draw_regions(frame, regions):
+    """
+    Draw region of interest (rectangles) for better understanding and analyzing.
+
+    :param frame: Current frame to draw on. 
+    :param region: Dict of defined region
+    """
+
+    for region, bounds in regions.items():
+        color = bounds["color"]
+        cv2.rectangle(frame, (bounds["x_min"], bounds["x_max"]), (bounds["y_min"], bounds["y_max"]), color, 2)
+        cv2.putText(
+                frame,
+                region.upper(),
+                (bounds["x_min"] + 10, bounds["y_min"] + 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                color,
+                2
+            )
+        
+
+def detect_region(cx,cy,regions):
+    """
+    Detect the region (north, south, etc.) based on the given point (cx,cy). 
+
+    :param cx: center x-coordinate of the object. 
+    :param cy: center y-coordinate of the object. 
+    :param region: Defined regions:
+    :return: Region
+    """
+
+    for region, bounds in regions.items():
+        if bounds["x_min"] <= cx <= bounds["x_max"] and bounds["y_min"] <= cy <= bounds["y_max"]:
+            return region
+        return None
+    
 # Function to process video and track vehicles
 # km/hr
 def process_video(video_path, conf_threshold=0.3):
@@ -111,15 +203,26 @@ def process_video(video_path, conf_threshold=0.3):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
 
+    regions = {
+        "north": {"x_min": 0, "x_max": width, "y_min": 0, "y_max": height // 4, "color": (255,0,0)}, # Blue
+        "east": {"x_min": 3 * width // 4, "x_max": width, "y_min": 0, "y_max": height, "color": (0,255,0)}, # Green
+        "south": {"x_min": 0, "x_max": width, "y_min": 3 * height // 4, "y_max": height // 4, "color": (0,0,255)}, # Red
+        "west": {"x_min": 0,  "x_max": width // 4, "y_min": 0, "y_max": height, "color": (255,255,0)}, # Cyan
+    }
+
 
     # Initialize tracking and speed estimation variables
-    track_data = {}  # vehicle_id: [(frame, cx, cy, speed, label), ...]
+    track_data = {}  # vehicle_id: [(frame, cx, cy, speed, label, entry, exit), ...]
     frame_count = 0
 
     # Process video frames
     for results in model.track(source=video_path, conf=conf_threshold, show=False, stream=True):
         frame_count += 1
         frame = results.orig_img.copy()
+
+
+        # Draw rectangular box around each region
+        draw_regions(frame, regions)
 
         for box in results.boxes:
             if box.id is None:
@@ -138,9 +241,11 @@ def process_video(video_path, conf_threshold=0.3):
             cx = (x1 + x2) / 2
             cy = (y1 + y2) / 2
 
+            region = detect_region(cx,cy,regions)
             # Calculate speed
             if object_id not in track_data:
                 speed = 0.0
+                entry_point = region
             else:
                 # Get the data from prev frame of a object
                 last_frame, last_cx, last_cy, last_speed, _ = track_data[object_id][-1]
@@ -163,9 +268,11 @@ def process_video(video_path, conf_threshold=0.3):
                     speed = speed_m_per_s * 3.6
                 else:
                     speed = last_speed
+                
+                entry_point = None
 
             # Update tracking data
-            track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label))
+            track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
 
             # Draw bounding box and annotations
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -202,7 +309,24 @@ def main():
     generate_nod_file("sumo_files/nod.xml") # Node file
     generate_edg_file("sumo_files/edg.xml") # Edges file
     generate_type_file("sumo_files/type.xml") # Types file
-    generate_route_file(vehicle_tracks, "sumo_files/route.rou.xml") # Routes file
+
+
+    entry_exit_mappings = {
+        "route_north_to_east" : ["north","east"],
+        "route_north_to_south" : ["north","south"],
+        "route_north_to_west": ["north","west"],
+        "route_east_to_west": ["east","west"],
+        "route_east_to_south": ["east","south"],
+        "route_east_to_north": ["east","north"],
+        "route_south_to_west": ["south","west"],
+        "route_south_to_north": ["south","north"],
+        "route_south_to_east": ["south","east"],
+        "route_west_to_south": ["west","south"],
+        "route_west_to_north": ["west","north"],
+        "route_west_to_east": ["west","east"],
+        }
+
+    generate_route_file(vehicle_tracks, "sumo_files/route.rou.xml",entry_exit_mappings) # Routes file
     generate_config_file("sumo_files/sumo_config.sumocfg") # Config File
 
     # Generate Network File
