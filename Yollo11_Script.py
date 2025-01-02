@@ -109,7 +109,7 @@ def process_video(video_path, conf_threshold=0.3):
     return vehicle_tracks
 
 # Main execution
-video_path = '../Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
+video_path = 'Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
 vehicle_tracks = process_video(video_path, conf_threshold=0.3)
 
 generate_sumo_route_file(vehicle_tracks, 'yolo11_car_routes.rou.xml')
