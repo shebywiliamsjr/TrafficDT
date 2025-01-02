@@ -4,6 +4,7 @@ from ultralytics import solutions
 import xml.etree.ElementTree as ET
 import os
 import math
+import numpy as np
 
 # Function to generate nod.xml
 def generate_nod_file(output_file):
@@ -125,7 +126,7 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping):
             root, "vehicle",
             id=f"veh{vehicle_id}",
             type=tracks[0][4],
-            route="route0",
+            route="route_north_to_east",
             depart=f"{departure_time:.2f}"  
         )
 
@@ -144,26 +145,49 @@ def generate_config_file(output_file):
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
-def draw_regions(frame, regions):
+# def draw_regions(frame, regions):
+#     """
+#     Draw region of interest (rectangles) for better understanding and analyzing.
+
+#     :param frame: Current frame to draw on. 
+#     :param region: Dict of defined region
+#     """
+
+#     for region, bounds in regions.items():
+#         color = bounds["color"]
+#         cv2.rectangle(frame, (bounds["x_min"], bounds["y_min"]), (bounds["x_max"], bounds["y_max"]), color, 2)
+#         cv2.putText(
+#                 frame,
+#                 region.upper(),
+#                 (bounds["x_min"] + 10, bounds["y_min"] + 30),
+#                 cv2.FONT_HERSHEY_SIMPLEX,
+#                 0.5,
+#                 color,
+#                 2
+#             )
+
+def draw_polygonal_region(frame,regions):
     """
-    Draw region of interest (rectangles) for better understanding and analyzing.
+    Draw region of interest (polygons) for better understanding and analyzing.
 
     :param frame: Current frame to draw on. 
     :param region: Dict of defined region
     """
 
-    for region, bounds in regions.items():
-        color = bounds["color"]
-        cv2.rectangle(frame, (bounds["x_min"], bounds["x_max"]), (bounds["y_min"], bounds["y_max"]), color, 2)
+    for region, data in regions.items():
+        points = np.array(data["points"], dtype=np.int32)
+        color = data["color"]
+        cv2.polylines(frame, [points], isClosed=True, color=color, thickness=2)
+        cx, cy = np.mean(points, axis=0).astype(int)
         cv2.putText(
-                frame,
-                region.upper(),
-                (bounds["x_min"] + 10, bounds["y_min"] + 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                color,
-                2
-            )
+            frame,
+            region.upper(),
+            (cx - 50, cy),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, 
+            color, 
+            2
+        )
         
 
 def detect_region(cx,cy,regions):
@@ -176,10 +200,22 @@ def detect_region(cx,cy,regions):
     :return: Region
     """
 
-    for region, bounds in regions.items():
-        if bounds["x_min"] <= cx <= bounds["x_max"] and bounds["y_min"] <= cy <= bounds["y_max"]:
-            return region
-        return None
+    # for region, bounds in regions.items():
+    #     if bounds["x_min"] <= cx <= bounds["x_max"] and bounds["y_min"] <= cy <= bounds["y_max"]:
+    #         return region
+    #     return None
+
+    detected_region = None
+
+    for region, data in regions.items():
+        points = np.array(data["points"], dtype=np.int32)
+        is_inside = cv2.pointPolygonTest(points, (cx, cy), False)
+
+        if is_inside >= 0:
+            detected_region = region
+            break
+
+    return detected_region
     
 # Function to process video and track vehicles
 # km/hr
@@ -204,10 +240,10 @@ def process_video(video_path, conf_threshold=0.3):
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     regions = {
-        "north": {"x_min": 0, "x_max": width, "y_min": 0, "y_max": height // 4, "color": (255,0,0)}, # Blue
-        "east": {"x_min": 3 * width // 4, "x_max": width, "y_min": 0, "y_max": height, "color": (0,255,0)}, # Green
-        "south": {"x_min": 0, "x_max": width, "y_min": 3 * height // 4, "y_max": height // 4, "color": (0,0,255)}, # Red
-        "west": {"x_min": 0,  "x_max": width // 4, "y_min": 0, "y_max": height, "color": (255,255,0)}, # Cyan
+        "north": {"points": [(width // 3, height // 10), (width // 2 + 100, height // 10) , (width // 2 + 100, height // 5), (width // 2 - 100, height // 3)], "color": (255,0,0)}, # Blue
+        "east": {"points": [(width // 2 + 150,  height // 5), (width // 2 + 450, height // 5) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (0,255,0)}, # Green
+        "south": {"points": [(width // 2 ,  height ), (width // 2 + 500, height // 2) , (width , height - 50) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
+        "west": {"points": [(0,  height // 2 ), (width // 4 + 100,  height // 2 - 100) , (width // 2 , height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
     }
 
 
@@ -222,7 +258,9 @@ def process_video(video_path, conf_threshold=0.3):
 
 
         # Draw rectangular box around each region
-        draw_regions(frame, regions)
+        # draw_regions(frame, regions)
+        draw_polygonal_region(frame,regions)
+
 
         for box in results.boxes:
             if box.id is None:
@@ -242,13 +280,15 @@ def process_video(video_path, conf_threshold=0.3):
             cy = (y1 + y2) / 2
 
             region = detect_region(cx,cy,regions)
+
             # Calculate speed
             if object_id not in track_data:
                 speed = 0.0
                 entry_point = region
+                region = None
             else:
                 # Get the data from prev frame of a object
-                last_frame, last_cx, last_cy, last_speed, _ = track_data[object_id][-1]
+                last_frame, last_cx, last_cy, last_speed, *_ = track_data[object_id][-1]
                 frame_diff = frame_count - last_frame
 
                 if frame_diff > 0:
@@ -302,7 +342,8 @@ def main():
 
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)
-    # print(vehicle_tracks)
+    print(vehicle_tracks)
+    print("----------------------------------------")
 
     # Generate SUMO input files
     os.makedirs("sumo_files", exist_ok=True)
