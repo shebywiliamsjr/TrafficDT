@@ -115,8 +115,8 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping):
         ET.SubElement(root, "route", id=route_id, edges=route_egdes)  
 
     for vehicle_id, tracks in vehicle_tracks.items():
-        if len(tracks) < 2:
-            continue
+        # if len(tracks) < 2:
+        #     continue
 
         # Calculate departure time based on the first frame the vehicle appears
         first_frame = tracks[0][0]
@@ -240,8 +240,8 @@ def process_video(video_path, conf_threshold=0.3):
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     regions = {
-        "north": {"points": [(width // 3, height // 10), (width // 2 + 100, height // 10) , (width // 2 + 100, height // 5), (width // 2 - 100, height // 3)], "color": (255,0,0)}, # Blue
-        "east": {"points": [(width // 2 + 150,  height // 5), (width // 2 + 450, height // 5) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (0,255,0)}, # Green
+        "north": {"points": [(width // 3, height // 10), (width // 2 + 100, height // 10) , (width // 2 + 100, height // 5), (width // 2 - 200, height // 3)], "color": (255,0,0)}, # Blue
+        "east": {"points": [(width // 2 + 150,  height // 5), (width // 2 + 550, height // 5 - 100) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (0,255,0)}, # Green
         "south": {"points": [(width // 2 ,  height ), (width // 2 + 500, height // 2) , (width , height - 50) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
         "west": {"points": [(0,  height // 2 ), (width // 4 + 100,  height // 2 - 100) , (width // 2 , height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
     }
@@ -281,6 +281,8 @@ def process_video(video_path, conf_threshold=0.3):
 
             region = detect_region(cx,cy,regions)
 
+            print(f"Frame {frame_count}, Object ID {object_id}, Region {region}")
+
             # Calculate speed
             if object_id not in track_data:
                 speed = 0.0
@@ -318,7 +320,8 @@ def process_video(video_path, conf_threshold=0.3):
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(
                 frame,
-                f"ID:{object_id} {label} {speed:.2f} km/hr",
+                # f"ID:{object_id} {label} {speed:.2f} km/hr",
+                f"ID: {object_id}, Region: {region}",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
@@ -334,6 +337,44 @@ def process_video(video_path, conf_threshold=0.3):
 
     return track_data
 
+def calculate_vehicle_speeds(vehicle_information):
+    """
+    Calaulate average speed for each vehicle
+
+    :param vehicle_information: Dict information of the detected vehicle
+    :return: Dictionary containing vehicle speed
+    """
+
+    vechicle_speeds = {}
+    for vehicle_id, tracks in vehicle_information.items():
+        speeds = [track[3] for track in tracks if track[3] > 0]
+        if speeds: 
+            avg_speed = sum(speeds) / len(speeds)
+            vechicle_speeds[vehicle_id] = avg_speed
+    
+    return vechicle_speeds
+
+def filter_valid_tracks(vehicle_information):
+    """
+    Filter vehicle tracks to ensure they have valid entry and exit points for the routes
+    :param vehicle_information: Dict information of the detected vehicle
+    :return: Dictionary containing valid tracks
+    """
+
+    valid_tracks = {}
+    for vehicle_id, tracks in vehicle_information.items():
+
+        print(f"1st Vehicle track for {vehicle_id}", tracks[0])
+        print(f"Last Vehicle track for {vehicle_id}", tracks[-1])
+        entry = tracks[0][5]
+        exit = tracks[-1][6]
+
+        if (entry != None and exit != None) and (entry != exit):
+            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit}
+        else: 
+            print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
+
+    return valid_tracks
 
 def main():
 
@@ -342,8 +383,15 @@ def main():
 
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)
-    print(vehicle_tracks)
-    print("----------------------------------------")
+
+    vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
+    valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
+
+    print(f"Vehicle speed...", vehicle_speeds)
+    print(f"Valid tracks...", valid_vehicle_tracks)
+    print(f"Len of Valid Tracks... {len(valid_vehicle_tracks)}")
+    print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
+    # print(vehicle_tracks)
 
     # Generate SUMO input files
     os.makedirs("sumo_files", exist_ok=True)
