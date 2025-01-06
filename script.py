@@ -96,18 +96,26 @@ def generate_type_file(output_file):
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
 # Function to generate rou.xml
-def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping):
+def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes, vehicle_speeds):
     """
     Generate Rou.XML file for SUMO using the vehicle tracking dara.
 
-    :param vehicle_tracks: Dict of detected vehicles
+    :param valid_vehicle_tracks: Dict of detected valid vehicles
     :param output_file: Path for the output file
     :param route_mapping: Dict with the entry and exit points for route IDs.
+    :param vTypes: Dict of generated vTypes based on it's speed
+    :param vehicle_speeds: Dict with avg. vehicle speed
     """
     root = ET.Element("routes")
-    ET.SubElement(root, "vType", id="car", accel="1.0", decel="5.0", sigma="0.0", length="5", maxSpeed="33.33")
-    ET.SubElement(root, "vType", id="bus", accel="1.0", decel="5.0", sigma="0.0", length="15", maxSpeed="3.33")
-    ET.SubElement(root, "vType", id="truck", accel="1.0", decel="5.0", sigma="0.0", length="10", maxSpeed="20")
+
+    # Vehicle Types
+    for vType in vTypes.values():
+        ET.SubElement(root, "vType", **vType)
+
+
+    # ET.SubElement(root, "vType", id="car", accel="1.0", decel="5.0", sigma="0.0", length="5", maxSpeed="33.33")
+    # ET.SubElement(root, "vType", id="bus", accel="1.0", decel="5.0", sigma="0.0", length="15", maxSpeed="3.33")
+    # ET.SubElement(root, "vType", id="truck", accel="1.0", decel="5.0", sigma="0.0", length="10", maxSpeed="20")
     # route = ET.SubElement(root, "route", id="north_to_east", edges="north_to_center center_toeast")  # Route from North->Center->East
 
     for route_id, data in entry_exit_mapping.items():
@@ -118,20 +126,51 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping):
         # if len(tracks) < 2:
         #     continue
 
+        speed = vehicle_speeds[vehicle_id]
+        vtype_id = f"vType_{vehicle_speeds[vehicle_id]}"
+
         # Calculate departure time based on the first frame the vehicle appears
-        first_frame = tracks[0][0]
+        # first_frame = tracks[0][0]
+        first_frame = tracks["frame"]
         departure_time = first_frame / 30.0  #TODO: Actual FPS is 30.12 ....
+
+
+        entry = tracks["entry"]
+        exit = tracks["exit"]
+        vehicle_route_id = f"route_{entry}_to_{exit}"
 
         ET.SubElement(
             root, "vehicle",
             id=f"veh{vehicle_id}",
-            type=tracks[0][4],
-            route="route_north_to_east",
+            # type=tracks[0][4],
+            type=vtype_id,
+            route=vehicle_route_id,
             depart=f"{departure_time:.2f}"  
         )
 
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
+
+
+def define_vehicle_types(vehicle_speeds):
+    """
+    Generate the vehicle types needed for SUMO based on the speed of the vehicles detected.
+
+    :param vehicle_speeds Dict containing speed of the vehicle detected
+    :return Dict of vehicletype with their respective config.
+    """
+
+    v_types = {}
+    for spped in set(vehicle_speeds.values()):
+        v_types[f"vType_{spped}"] = {
+            "id":f"vType_{spped}", 
+            "accel":"1.0", 
+            "decel":"5.0", 
+            "sigma":"0.0", 
+            "length":"5", 
+            "maxSpeed":str(spped / 3.6),
+        }
+    return v_types
 
 # Function to generate sumo_config.sumocfg
 def generate_config_file(output_file):
@@ -294,7 +333,7 @@ def process_video(video_path, conf_threshold=0.3):
                 frame_diff = frame_count - last_frame
 
                 if frame_diff > 0:
-                    meters_per_pixel = 0.05   #TODO: How to initialize this?
+                    meters_per_pixel = 0.07   
                     
                     # Euclidean distance to calculate distance between 2 frames of the obj
                     distance_px = math.hypot(cx - last_cx, cy - last_cy)
@@ -320,8 +359,8 @@ def process_video(video_path, conf_threshold=0.3):
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(
                 frame,
-                # f"ID:{object_id} {label} {speed:.2f} km/hr",
-                f"ID: {object_id}, Region: {region}",
+                f"ID:{object_id} {label} {speed:.2f} km/hr",
+                # f"ID: {object_id}, Region: {region}",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
@@ -351,7 +390,6 @@ def calculate_vehicle_speeds(vehicle_information):
         if speeds: 
             avg_speed = sum(speeds) / len(speeds)
             vechicle_speeds[vehicle_id] = avg_speed
-    
     return vechicle_speeds
 
 def filter_valid_tracks(vehicle_information):
@@ -370,7 +408,7 @@ def filter_valid_tracks(vehicle_information):
         exit = tracks[-1][6]
 
         if (entry != None and exit != None) and (entry != exit):
-            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit}
+            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0]}
         else: 
             print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
 
@@ -379,13 +417,15 @@ def filter_valid_tracks(vehicle_information):
 def main():
 
     # Path to the video
-    video_path = 'Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
+    # video_path = 'Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
+    video_path = './Data/cropped_video.mp4'
 
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)
 
     vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
     valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
+    vTypes = define_vehicle_types(vehicle_speeds)
 
     print(f"Vehicle speed...", vehicle_speeds)
     print(f"Valid tracks...", valid_vehicle_tracks)
@@ -415,7 +455,7 @@ def main():
         "route_west_to_east": ["west","east"],
         }
 
-    generate_route_file(vehicle_tracks, "sumo_files/route.rou.xml",entry_exit_mappings) # Routes file
+    generate_route_file(valid_vehicle_tracks, "sumo_files/route.rou.xml",entry_exit_mappings, vTypes,vehicle_speeds) # Routes file
     generate_config_file("sumo_files/sumo_config.sumocfg") # Config File
 
     # Generate Network File
