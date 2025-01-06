@@ -33,7 +33,7 @@ def generate_edg_file(output_file):
         "from": "center",
         "to": "n1",
         "id": "center_to_north",
-        "type": "3L45"
+        "type": "2L45"
     })  # Center to North
 
     ET.SubElement(root, "edge", {
@@ -47,7 +47,7 @@ def generate_edg_file(output_file):
         "from": "center",
         "to": "n2",
         "id": "center_to_east",
-        "type": "3L45"
+        "type": "2L45"
     })  # Center to East
 
     ET.SubElement(root, "edge", {
@@ -61,7 +61,7 @@ def generate_edg_file(output_file):
         "from": "center",
         "to": "n3",
         "id": "center_to_south",
-        "type": "3L45"
+        "type": "2L45"
     })  # Center to South
 
     ET.SubElement(root, "edge", {
@@ -75,7 +75,7 @@ def generate_edg_file(output_file):
         "from": "center",
         "to": "n4",
         "id": "center_to_west",
-        "type": "3L45"
+        "type": "2L45"
     })  # Center to West
 
     
@@ -92,6 +92,7 @@ def generate_edg_file(output_file):
 def generate_type_file(output_file):
     root = ET.Element("types")
     ET.SubElement(root, "type", id="3L45", priority="3", numLanes="3", speed="45")
+    ET.SubElement(root, "type", id="2L45", priority="2", numLanes="2", speed="45")
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
@@ -281,7 +282,7 @@ def process_video(video_path, conf_threshold=0.3):
     regions = {
         "north": {"points": [(width // 3, height // 10), (width // 2 + 100, height // 10) , (width // 2 + 100, height // 5), (width // 2 - 200, height // 3)], "color": (255,0,0)}, # Blue
         "east": {"points": [(width // 2 + 150,  height // 5), (width // 2 + 550, height // 5 - 100) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (0,255,0)}, # Green
-        "south": {"points": [(width // 2 ,  height ), (width // 2 + 500, height // 2) , (width , height - 50) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
+        "south": {"points": [(width // 2 ,  height - 100 ), (width , height // 2) , (width , height) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
         "west": {"points": [(0,  height // 2 ), (width // 4 + 100,  height // 2 - 100) , (width // 2 , height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
     }
 
@@ -427,8 +428,6 @@ def main():
     valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
     vTypes = define_vehicle_types(vehicle_speeds)
 
-    print(f"Vehicle speed...", vehicle_speeds)
-    print(f"Valid tracks...", valid_vehicle_tracks)
     print(f"Len of Valid Tracks... {len(valid_vehicle_tracks)}")
     print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
     # print(vehicle_tracks)
