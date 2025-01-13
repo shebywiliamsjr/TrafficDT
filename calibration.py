@@ -51,7 +51,7 @@ def calibrate_meters_per_pixel(video_path, conf_threshold):
     frame_count = 0
 
 
-    model = YOLO("yolo11n.pt") 
+    model = YOLO("best_1.pt") 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError(f"Error opening video file {video_path}")
@@ -69,7 +69,7 @@ def calibrate_meters_per_pixel(video_path, conf_threshold):
             label = model.names[cls]
 
             # Car, bus, truck
-            if cls != 5:  
+            if cls != 8:  
                 continue
 
 

@@ -6,10 +6,14 @@ import os
 import math
 import numpy as np
 
+
+LOGGING_STARTED=False
+vehicle_present = False
+
 # Function to generate nod.xml
 def generate_nod_file(output_file):
     root = ET.Element("nodes")
-    ET.SubElement(root, "node", id="center", x="0", y="0", type="priority") # Center
+    ET.SubElement(root, "node", id="center", x="0", y="0", type="traffic_light") # Center
     ET.SubElement(root, "node", id="n1", x="0", y="100", type="priority") # North
     ET.SubElement(root, "node", id="n2", x="100", y="0", type="priority") # East
     ET.SubElement(root, "node", id="n3", x="0", y="-100", type="priority") # South
@@ -85,9 +89,6 @@ def generate_edg_file(output_file):
     # Write to an XML file
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
     
-
-
-
 # Function to generate type.xml
 def generate_type_file(output_file):
     root = ET.Element("types")
@@ -127,8 +128,11 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes,
         # if len(tracks) < 2:
         #     continue
 
+
         speed = vehicle_speeds[vehicle_id]
-        vtype_id = f"vType_{vehicle_speeds[vehicle_id]}"
+        cls = tracks["cls"]
+        # cls = vehicle_information[vehicle_id][0][4]
+        vtype_id = f"vType_{cls}_{vehicle_speeds[vehicle_id]}"
 
         # Calculate departure time based on the first frame the vehicle appears
         # first_frame = tracks[0][0]
@@ -153,7 +157,7 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes,
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
 
-def define_vehicle_types(vehicle_speeds):
+def define_vehicle_types(vehicle_speeds, vehicle_information):
     """
     Generate the vehicle types needed for SUMO based on the speed of the vehicles detected.
 
@@ -161,14 +165,38 @@ def define_vehicle_types(vehicle_speeds):
     :return Dict of vehicletype with their respective config.
     """
 
+    
+    v_type_lengths = {
+        "car":4.5,
+        "bus": 13,
+        "truck": 8,
+    }
+
     v_types = {}
-    for spped in set(vehicle_speeds.values()):
-        v_types[f"vType_{spped}"] = {
-            "id":f"vType_{spped}", 
+
+    # for spped in set(vehicle_speeds.values()):
+    #     print("TYPE .... ", vehicle_information[veh])
+    #     v_types[f"vType_{spped}"] = {
+    #         "id":f"vType_{spped}", 
+    #         "accel":"1.0", 
+    #         "decel":"5.0", 
+    #         "sigma":"0.0", 
+    #         "length":"5", 
+    #         "maxSpeed":str(spped / 3.6),
+    #     }
+    # return v_types
+
+    for vehicle_id, spped in vehicle_speeds.items():
+        cls = vehicle_information[vehicle_id][0][4]
+        length = v_type_lengths[cls]
+
+        print("length is...", length)
+        v_types[f"vType_{cls}_{spped}"] = {
+            "id":f"vType_{cls}_{spped}", 
             "accel":"1.0", 
             "decel":"5.0", 
             "sigma":"0.0", 
-            "length":"5", 
+            "length":str(length), 
             "maxSpeed":str(spped / 3.6),
         }
     return v_types
@@ -178,6 +206,7 @@ def generate_config_file(output_file):
     root = ET.Element("configuration")
     input_el = ET.SubElement(root, "input")
     ET.SubElement(input_el, "net-file", value="simple_nw_se.net.xml")
+    # ET.SubElement(input_el, "net-file", value="updated_one.net.xml")
     ET.SubElement(input_el, "route-files", value="route.rou.xml")
     time_el = ET.SubElement(root, "time")
     ET.SubElement(time_el, "begin", value="0") 
@@ -257,6 +286,110 @@ def detect_region(cx,cy,regions):
 
     return detected_region
     
+def check_centroid(cx,cy, old_cx, old_xy, max_difference=50):
+    is_changed = False
+    distance = math.hypot(cx - old_cx, cy - old_xy)
+    if distance < max_difference:
+        closest_detection = (cx,cy)
+        closest_distance = distance
+    else: 
+        is_changed = True
+
+    return closest_detection, is_changed
+
+already_tracked = []
+top_three_vehicles = []
+# Based on a box region..
+def track_traffic_light_states(frame_count, track_data, fps, traffic_light_zones, traffic_light_states, light_durations, logging_started) :
+    global LOGGING_STARTED
+    global vehicle_present
+    min_duration = 15
+    current_time = frame_count / fps
+    buffer_time = 15
+
+    for region, data in traffic_light_zones.items():
+        tracked_vehicle_id = data.get("tracked_vehicle_id", None)
+        print("Tracked vehicle id is in beginining...", tracked_vehicle_id)
+
+        if tracked_vehicle_id is None:
+            for vehicle_id, tracks in track_data.items():
+                last_track = tracks[-1]
+                cx, cy, speed = last_track[1], last_track[2], last_track[3]
+
+                is_in_zone = detect_region(cx, cy, traffic_light_zones)
+                print("SPEEDD? Is in zone?", speed, is_in_zone)
+                if is_in_zone and speed <= 7:
+                    if vehicle_id not in already_tracked:
+                        print("Vehicle is in the zone and stopped..")
+                        # print("Vehicle id is....", vehicle_id)
+                        data["tracked_vehicle_id"] = vehicle_id
+                        vehicle_present = True
+                else:
+                    vehicle_present = False
+        else: 
+            for vehicle_id, tracks in track_data.items():
+                if tracked_vehicle_id == vehicle_id:
+                    last_track = tracks[-1]
+                    cx, cy, speed = last_track[1], last_track[2], last_track[3]
+                    print("SPEEDD is....", speed, vehicle_id)
+                    is_in_zone = detect_region(cx, cy, traffic_light_zones)
+                    # print("Same vehicle", is_in_zone, speed)
+                    if speed > 7:
+                        print("Vehicle is moving....", vehicle_id)
+                        # data["tracked_vehicle_id"] = vehicle_id
+                    #     vehicle_present = True
+                    # else:
+                        vehicle_present = False
+                        data["tracked_vehicle_id"] = None
+                        print(data)
+                        already_tracked.append(vehicle_id)
+        
+
+            
+
+        if vehicle_present:
+            current_state = "red"
+        else: 
+            current_state = "green"
+
+        print("Current state is...", current_state)
+
+        if not LOGGING_STARTED and current_state == "green":
+            continue
+
+        LOGGING_STARTED = True
+ 
+
+        # Start new interval: Initially empty, traffic light state changes
+        if len(light_durations) == 0:
+            light_durations.append({"region":region,"state":current_state,"start":current_time,"end":None, "duration":None, "buffer_start":None})
+        elif light_durations[-1]["state"] != current_state:
+                print("State changed..")
+                last_entry = light_durations[-1]
+                last_entry_duration = current_time - last_entry["start"]
+
+                if last_entry_duration < min_duration:
+                    continue
+
+               
+
+                # if last_entry["buffer_start"] is None:
+                #     last_entry["buffer_start"] = current_time
+                # elif current_time - last_entry["buffer_start"] >= buffer_time:
+                #     if last_entry_duration < min_duration:
+                #         continue
+
+                last_entry["end"] = current_time
+                last_entry["duration"] = current_time - last_entry["start"]
+
+                light_durations.append({"region":region,"state":current_state,"start":current_time,"end":None, "duration":None, "buffer_start":None})
+
+                
+
+        print(light_durations)
+        return light_durations
+
+ 
 # Function to process video and track vehicles
 # km/hr
 def process_video(video_path, conf_threshold=0.3):
@@ -268,7 +401,15 @@ def process_video(video_path, conf_threshold=0.3):
     :return: Dictionary containing track data for each vehicle.
     """
 
-    model = YOLO("yolo11n.pt") 
+    # model = YOLO("yolo11n.pt") 
+    model = YOLO("best_1.pt")
+    model.verbose = False
+    classes = model.names
+
+    # Print the classes
+    print("Classes in the model:")
+    for class_id, class_name in classes.items():
+        print(f"ID: {class_id}, Name: {class_name}")
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -286,20 +427,31 @@ def process_video(video_path, conf_threshold=0.3):
         "west": {"points": [(0,  height // 2 ), (width // 4 + 100,  height // 2 - 100) , (width // 2 , height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
     }
 
+    # traffic_light_zones = {
+    #     # "west":{"points":[(width // 3 - 200 ,  height // 2 + 50 ), (width // 4 + 100,  height // 2 + 40) , (width // 4 + 100 , height - 170) , (width // 3 - 200, height - 140)], "color": (123,255,255)}, 
+    #     "north":{"points":[(width // 3  + 20 ,  height //  10  + 50), (width // 3 + 100,  height // 10 + 30) , (width // 2 - 50 , height // 5 + 50) , (width // 2  - 200, height // 3 - 50)], "color": (123,255,255)}, 
+    # }
+     
+   
+
 
     # Initialize tracking and speed estimation variables
     track_data = {}  # vehicle_id: [(frame, cx, cy, speed, label, entry, exit), ...]
     frame_count = 0
 
+    # light_durations = []
+    # logging_started = False
+
     # Process video frames
-    for results in model.track(source=video_path, conf=conf_threshold, show=False, stream=True):
+    for results in model.track(source=video_path, conf=conf_threshold, show=False, stream=True, verbose=False):
         frame_count += 1
         frame = results.orig_img.copy()
-
 
         # Draw rectangular box around each region
         # draw_regions(frame, regions)
         draw_polygonal_region(frame,regions)
+
+        # draw_polygonal_region(frame,traffic_light_zones)
 
 
         for box in results.boxes:
@@ -311,7 +463,10 @@ def process_video(video_path, conf_threshold=0.3):
             label = model.names[cls]
 
             # Car, bus, truck
-            if cls not in [2, 5, 7]:  
+            # if cls not in [2, 5, 7]:  
+            #     continue
+
+            if cls not in [3, 5, 8]:  
                 continue
 
             # Box center coordinates
@@ -320,8 +475,6 @@ def process_video(video_path, conf_threshold=0.3):
             cy = (y1 + y2) / 2
 
             region = detect_region(cx,cy,regions)
-
-            print(f"Frame {frame_count}, Object ID {object_id}, Region {region}")
 
             # Calculate speed
             if object_id not in track_data:
@@ -356,12 +509,24 @@ def process_video(video_path, conf_threshold=0.3):
             # Update tracking data
             track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
 
+            # traffic_light_states = {
+            #     region: {"state":None,"start_time":0} for region in traffic_light_zones
+            # }
+
+
+            # if region == "north":
+            #     light = track_traffic_light_states(frame_count,track_data, fps, traffic_light_zones, traffic_light_states, light_durations,logging_started)
+            #     print("final light durarion..", light)
+            #     # track_traffic_light_states_without_yolo_id(frame_count, track_data, fps,traffic_light_zones, traffic_light_states, light_durations)
+
+            # print(traffic_light_states)
+
             # Draw bounding box and annotations
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(
                 frame,
-                f"ID:{object_id} {label} {speed:.2f} km/hr",
-                # f"ID: {object_id}, Region: {region}",
+                # f"ID:{object_id} {label} {speed:.2f} km/hr",
+                f"ID: {object_id}",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
@@ -369,6 +534,7 @@ def process_video(video_path, conf_threshold=0.3):
                 2
             )
         cv2.imshow("Vehicle Detection and Speed Estimation", frame)
+        # cv2.waitKey(100)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -403,13 +569,11 @@ def filter_valid_tracks(vehicle_information):
     valid_tracks = {}
     for vehicle_id, tracks in vehicle_information.items():
 
-        print(f"1st Vehicle track for {vehicle_id}", tracks[0])
-        print(f"Last Vehicle track for {vehicle_id}", tracks[-1])
         entry = tracks[0][5]
         exit = tracks[-1][6]
 
         if (entry != None and exit != None) and (entry != exit):
-            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0]}
+            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0],"cls":tracks[0][4]}
         else: 
             print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
 
@@ -418,19 +582,17 @@ def filter_valid_tracks(vehicle_information):
 def main():
 
     # Path to the video
-    # video_path = 'Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
-    video_path = './Data/cropped_video.mp4'
+    video_path = './Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
 
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)
 
     vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
     valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
-    vTypes = define_vehicle_types(vehicle_speeds)
+    vTypes = define_vehicle_types(vehicle_speeds, vehicle_tracks)
 
     print(f"Len of Valid Tracks... {len(valid_vehicle_tracks)}")
     print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
-    # print(vehicle_tracks)
 
     # Generate SUMO input files
     os.makedirs("sumo_files", exist_ok=True)
@@ -464,4 +626,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # generate_config_file("sumo_files/sumo_config_updated.sumocfg")
 
