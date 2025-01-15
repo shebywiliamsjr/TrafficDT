@@ -6,3 +6,5 @@ data/
 .vscode
 .DS_Store
 
+*.json
+

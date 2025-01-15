@@ -215,27 +215,6 @@ def generate_config_file(output_file):
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
-# def draw_regions(frame, regions):
-#     """
-#     Draw region of interest (rectangles) for better understanding and analyzing.
-
-#     :param frame: Current frame to draw on. 
-#     :param region: Dict of defined region
-#     """
-
-#     for region, bounds in regions.items():
-#         color = bounds["color"]
-#         cv2.rectangle(frame, (bounds["x_min"], bounds["y_min"]), (bounds["x_max"], bounds["y_max"]), color, 2)
-#         cv2.putText(
-#                 frame,
-#                 region.upper(),
-#                 (bounds["x_min"] + 10, bounds["y_min"] + 30),
-#                 cv2.FONT_HERSHEY_SIMPLEX,
-#                 0.5,
-#                 color,
-#                 2
-#             )
-
 def draw_polygonal_region(frame,regions):
     """
     Draw region of interest (polygons) for better understanding and analyzing.
@@ -269,12 +248,6 @@ def detect_region(cx,cy,regions):
     :param region: Defined regions:
     :return: Region
     """
-
-    # for region, bounds in regions.items():
-    #     if bounds["x_min"] <= cx <= bounds["x_max"] and bounds["y_min"] <= cy <= bounds["y_max"]:
-    #         return region
-    #     return None
-
     detected_region = None
 
     for region, data in regions.items():
@@ -298,101 +271,6 @@ def check_centroid(cx,cy, old_cx, old_xy, max_difference=50):
 
     return closest_detection, is_changed
 
-# already_tracked = []
-# tracked_vehicles_for_traffic_lights = []
-# # Based on a box region..
-# def track_traffic_light_states(frame_count, track_data, fps, traffic_light_zones, traffic_light_states, light_durations, logging_started) :
-#     global LOGGING_STARTED
-#     global vehicle_present
-#     min_duration = 15
-#     current_time = frame_count / fps
-#     buffer_time = 15
-
-#     for region, data in traffic_light_zones.items():
-#         tracked_vehicle_id = data.get("tracked_vehicle_id", None)
-#         print("Tracked vehicle id is in beginining...", tracked_vehicle_id)
-
-#         if len(tracked_vehicles_for_traffic_lights) == 0:
-#             for vehicle_id, tracks in track_data.items():
-#                 last_track = tracks[-1]
-#                 cx, cy, speed = last_track[1], last_track[2], last_track[3]
-
-#                 is_in_zone = detect_region(cx, cy, traffic_light_zones)
-#                 print("Vehicle is in zone?", is_in_zone)
-#                 if is_in_zone and speed <= 7:
-#                     if vehicle_id not in already_tracked:
-#                         print("Vehicle is in the zone and stopped..")
-#                         print("Need to skip this frame..", frame_count)
-#                         # print("Vehicle id is....", vehicle_id)
-#                         # data["tracked_vehicle_id"] = vehicle_id
-#                         vehicle_present = True
-#                         tracked_vehicles_for_traffic_lights.append(vehicle_id)
-#                 else:
-#                     vehicle_present = False
-#         else: 
-#             for vehicle_id, tracks in track_data.items():
-#                 if tracked_vehicle_id in tracked_vehicles_for_traffic_lights:
-#                     last_track = tracks[-1]
-#                     cx, cy, speed = last_track[1], last_track[2], last_track[3]
-#                     print("SPEEDD is....", speed, vehicle_id)
-#                     is_in_zone = detect_region(cx, cy, traffic_light_zones)
-#                     # print("Same vehicle", is_in_zone, speed)
-#                     if speed > 7:
-#                         print("Vehicle is moving....", vehicle_id)
-#                         # data["tracked_vehicle_id"] = vehicle_id
-#                     #     vehicle_present = True
-#                     # else:
-#                         vehicle_present = False
-#                         data["tracked_vehicle_id"] = None
-#                         print(data)
-#                         already_tracked.append(vehicle_id)
-        
-
-            
-
-#         if vehicle_present:
-#             current_state = "red"
-#         else: 
-#             current_state = "green"
-
-#         print("Current state is...", current_state)
-
-#         if not LOGGING_STARTED and current_state == "green":
-#             continue
-
-#         LOGGING_STARTED = True
- 
-
-#         # Start new interval: Initially empty, traffic light state changes
-#         if len(light_durations) == 0:
-#             light_durations.append({"region":region,"state":current_state,"start":current_time,"end":None, "duration":None, "buffer_start":None})
-#         elif light_durations[-1]["state"] != current_state:
-#                 print("State changed..")
-#                 last_entry = light_durations[-1]
-#                 last_entry_duration = current_time - last_entry["start"]
-
-#                 if last_entry_duration < min_duration:
-#                     continue
-
-               
-
-#                 # if last_entry["buffer_start"] is None:
-#                 #     last_entry["buffer_start"] = current_time
-#                 # elif current_time - last_entry["buffer_start"] >= buffer_time:
-#                 #     if last_entry_duration < min_duration:
-#                 #         continue
-
-#                 last_entry["end"] = current_time
-#                 last_entry["duration"] = current_time - last_entry["start"]
-
-#                 light_durations.append({"region":region,"state":current_state,"start":current_time,"end":None, "duration":None, "buffer_start":None})
-
-                
-
-#         print(light_durations)
-#         return light_durations
-
-
 
 already_tracked = []
 skipped_frames = []
@@ -402,7 +280,7 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
     
     current_time = frame_count / fps
     min_duration = 25
-    lost_vehicle_threshold = 10  # Number of frames a vehicle can be missing before being considered passed
+    lost_vehicle_threshold = 10  
 
     for region, data in traffic_light_zones.items():
         tracked_vehicle_id = data.get("tracked_vehicle_id", None)
@@ -459,15 +337,12 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
             # Handle lost vehicle detection
             if vehicle_present == False:
                 data['lost_frames'] = data.get('lost_frames', 0) + 1
-                # print(f"Vehicle {tracked_vehicle_id} missing for {data['lost_frames']} frames.")
                 
                 # If vehicle is lost for more than a threshold, assume it's passed
                 if data['lost_frames'] > lost_vehicle_threshold:
-                    # print(f"Vehicle {tracked_vehicle_id} lost for too long, marking as passed.")
                     data['tracked_vehicle_id'] = None
                     vehicle_present = False
 
-        # Determine the traffic light state
    
         if vehicle_present:
             current_state = "red"
@@ -476,7 +351,6 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
             current_state = "green"
             skip_frame = False
 
-        # print(f"Current state for region {region}: {current_state}")
 
         if not LOGGING_STARTED and current_state == "green":
             continue
@@ -490,12 +364,10 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
             last_entry_duration = current_time - last_entry["start"]
 
             if last_entry_duration < min_duration:
-                # print(f"State change for region {region} too soon (less than {min_duration} seconds), ignoring.")
                 continue
 
             last_entry["end"] = current_time
             last_entry["duration"] = current_time - last_entry["start"]
-            # print(f"State change recorded for region {region}: {last_entry}")
 
             light_durations.append({"region": region, "state": current_state, "start": current_time, "end": None, "duration": None})
 
@@ -504,6 +376,7 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
 # Function to process video and track vehicles
 # km/hr
 def process_video(video_path, conf_threshold=0.7):
+    global skipped_frames 
     is_skip_frame = False
     """
     Processes a video to detect vehicles, track them (id), and determine their speed.
@@ -631,6 +504,12 @@ def process_video(video_path, conf_threshold=0.7):
                 # Remove the last entry from the track data
                 skipped_frames.append(frame_count)
                 remove_data_for_frame(track_data, frame_count)
+            else: 
+                # Count the skipped frames and decrease the frame count by number of skipped frames
+                no_of_skipped_frames = len(set(skipped_frames))
+                if no_of_skipped_frames > 0:
+                    frame_count -= no_of_skipped_frames
+                    skipped_frames = []
 
 
             # Draw bounding box and annotations
@@ -647,12 +526,12 @@ def process_video(video_path, conf_threshold=0.7):
             )
 
        
-        # data_to_save = {
-        #     "skipped_frames": skipped_frames,
-        #     "track_data": track_data
-        # }
-        # with open('tracking_log.json', 'w') as json_file:
-        #     json.dump(data_to_save, json_file, indent=4)
+        data_to_save = {
+            "skipped_frames": skipped_frames,
+            "track_data": track_data
+        }
+        with open('tracking_log.json', 'w') as json_file:
+            json.dump(data_to_save, json_file, indent=4)
 
         cv2.imshow("Vehicle Detection and Speed Estimation", frame)
         # cv2.waitKey(100)
