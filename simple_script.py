@@ -689,7 +689,7 @@ def filter_valid_tracks(vehicle_information):
 def main():
 
     # Path to the video
-    video_path = './Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4'
+    video_path = './Data/Bellevue_116th_NE12th__2017-09-11_07-08-32.mp4'
 
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)

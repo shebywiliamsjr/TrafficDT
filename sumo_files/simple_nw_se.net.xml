@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2025-01-14 14:47:08 by Eclipse SUMO netconvert Version 1.20.0
+<!-- generated on 2025-01-30 12:31:58 by Eclipse SUMO netconvert Version 1.20.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
@@ -57,7 +57,13 @@
         <lane id="south_to_center_2" index="2" speed="45.00" length="96.00" shape="1.60,-0.00 1.60,96.00"/>
     </edge>
 
-    <junction id="center" type="priority" x="0.00" y="100.00" incLanes="north_to_center_0 north_to_center_1 north_to_center_2 south_to_center_0 south_to_center_1 south_to_center_2" intLanes=":center_0_0 :center_0_1 :center_2_0 :center_2_1" shape="-9.60,104.00 6.40,104.00 7.23,100.97 8.77,99.03 9.36,97.79 9.60,96.00 -6.40,96.00 -7.23,99.03 -8.77,100.97 -9.36,102.21">
+    <tlLogic id="center" type="static" programID="0" offset="0">
+        <phase duration="76" state="GGGG"/>
+        <phase duration="9"  state="yyyy"/>
+        <phase duration="5"  state="rrrr"/>
+    </tlLogic>
+
+    <junction id="center" type="traffic_light" x="0.00" y="100.00" incLanes="north_to_center_0 north_to_center_1 north_to_center_2 south_to_center_0 south_to_center_1 south_to_center_2" intLanes=":center_0_0 :center_0_1 :center_2_0 :center_2_1" shape="-9.60,104.00 6.40,104.00 7.23,100.97 8.77,99.03 9.36,97.79 9.60,96.00 -6.40,96.00 -7.23,99.03 -8.77,100.97 -9.36,102.21">
         <request index="0" response="0000" foes="0000" cont="0"/>
         <request index="1" response="0000" foes="0000" cont="0"/>
         <request index="2" response="0000" foes="0000" cont="0"/>
@@ -72,10 +78,10 @@
 
     <connection from="center_to_north" to="north_to_center" fromLane="1" toLane="2" via=":n1_0_0" dir="t" state="M"/>
     <connection from="center_to_south" to="south_to_center" fromLane="1" toLane="2" via=":n3_0_0" dir="t" state="M"/>
-    <connection from="north_to_center" to="center_to_south" fromLane="0" toLane="0" via=":center_0_0" dir="s" state="M"/>
-    <connection from="north_to_center" to="center_to_south" fromLane="1" toLane="1" via=":center_0_1" dir="s" state="M"/>
-    <connection from="south_to_center" to="center_to_north" fromLane="0" toLane="0" via=":center_2_0" dir="s" state="M"/>
-    <connection from="south_to_center" to="center_to_north" fromLane="1" toLane="1" via=":center_2_1" dir="s" state="M"/>
+    <connection from="north_to_center" to="center_to_south" fromLane="0" toLane="0" via=":center_0_0" tl="center" linkIndex="0" dir="s" state="O"/>
+    <connection from="north_to_center" to="center_to_south" fromLane="1" toLane="1" via=":center_0_1" tl="center" linkIndex="1" dir="s" state="O"/>
+    <connection from="south_to_center" to="center_to_north" fromLane="0" toLane="0" via=":center_2_0" tl="center" linkIndex="2" dir="s" state="O"/>
+    <connection from="south_to_center" to="center_to_north" fromLane="1" toLane="1" via=":center_2_1" tl="center" linkIndex="3" dir="s" state="O"/>
 
     <connection from=":center_0" to="center_to_south" fromLane="0" toLane="0" dir="s" state="M"/>
     <connection from=":center_0" to="center_to_south" fromLane="1" toLane="1" dir="s" state="M"/>
