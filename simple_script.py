@@ -238,6 +238,29 @@ def draw_polygonal_region(frame,regions):
             2
         )
         
+def draw_line_region(frame, regions):
+    for region, data in regions.items():
+        if len(data["points"]) >= 2:  
+            points = np.array(data["points"], dtype=np.int32)
+            color = data["color"]
+
+            if data["Start"]:
+                text = "START"
+            else: 
+                text = "END"
+            
+            cv2.line(frame, tuple(points[0]), tuple(points[1]), color, thickness=2)
+            
+            cx, cy = np.mean(points, axis=0).astype(int)
+            cv2.putText(
+                frame,
+                text,
+                (cx - 50, cy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6, 
+                color, 
+                2
+            )
 
 def detect_region(cx,cy,regions):
     """
@@ -412,6 +435,12 @@ def process_video(video_path, conf_threshold=0.7):
         "north":{"points":[(width // 3 + 40 ,  height //  10  + 50), (width // 3 + 100,  height // 10 + 30) , (width // 2 - 50 , height // 5 + 50) , (width // 2  - 250, height // 3 - 50)], "color": (123,255,255)}, 
     }
 
+    frame_count_zone = {
+        "north": {"points": [(400, 100), (800, 100)], "color": (0, 255, 0), "Start":True},  
+        # "south": {"points": [(600, height - 100), (width, height - 300)], "color": (255, 0, 0), "Start": False},  
+        "south": {"points": [(600, 550), (width, 350)], "color": (255, 0, 0), "Start": False},  
+    }
+
     light_durations = []
 
 
@@ -419,17 +448,23 @@ def process_video(video_path, conf_threshold=0.7):
     track_data = {}  # vehicle_id: [(frame, cx, cy, speed, label, entry, exit), ...]
     frame_count = 0
 
+    time_count = 0
+
     # Process video frames
     for results in model.track(source=video_path, conf=conf_threshold, show=False, stream=True, verbose=False):
         frame_count += 1
         frame = results.orig_img.copy()
         tracked_ids = set()
 
+        time_count += 1
+
         # Draw rectangular box around each region
         # draw_regions(frame, regions)
         draw_polygonal_region(frame,regions)
 
         draw_polygonal_region(frame,traffic_light_zones)
+
+        draw_line_region(frame, frame_count_zone)
 
 
         for box in results.boxes:
@@ -484,6 +519,33 @@ def process_video(video_path, conf_threshold=0.7):
             # Update tracking data
             track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
 
+            # Get the entry and exit frame count for the vehicle
+            
+            if cy + 7 > 100 and object_id not in down and region == "north": 
+                down[object_id] = {"start": time_count, "start_frame": frame_count}
+                print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
+            if object_id in down:
+                print(f"Vehicle id {object_id}. Value of cy: {cy}")
+                if 500 < cy + 8 :
+                    down[object_id]["end_frame"] = frame_count
+                    down[object_id]["end"] = time_count
+                    print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
+
+
+            print(f"Vehicle id {object_id} is in region {region} with cx and cy: {cx}, {cy}))")
+            if (cy + 7 > 500 and 600 <= cx <= width) and object_id not in up and region == "south":
+                up[object_id] = {"start": time_count, "start_frame": frame_count}
+                print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
+            if object_id in up:
+                if  cy + 8 < 100:
+                    up[object_id]["end_frame"] = frame_count
+                    up[object_id]["end"] = time_count
+                    print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
+            
+            print(f"Down: {down}")
+            print(f"Up: {up}")
+
+
             if region == "north":
                 is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
             
@@ -526,7 +588,37 @@ def process_video(video_path, conf_threshold=0.7):
     cap.release()
     cv2.destroyAllWindows()
 
+    calculate_average_time(up, down)
+
     return track_data
+
+def calculate_average_time(up_data, down_data):
+    valid_times = []
+
+    # Calculate valid times for up_data
+    for vehicle_id, up_item in up_data.items():
+        if "start" in up_item and "end" in up_item and up_item["start"] > 0 and up_item["end"] > 0:
+            time_taken_frames = up_item["end"] - up_item["start"]
+            time_in_sec = time_taken_frames / 30.12
+            valid_times.append(time_in_sec)
+
+    # Calculate valid times for down_data
+    for vehicle_id, down_item in down_data.items():
+        if "start" in down_item and "end" in down_item and down_item["start"] > 0 and down_item["end"] > 0:
+            time_taken_frames = down_item["end"] - down_item["start"]
+            time_in_sec = time_taken_frames / 30.12
+            print(f"Time taken for vehicle {vehicle_id} (Down) is {time_in_sec} seconds.")
+            valid_times.append(time_in_sec)
+
+    print(f"Valid times: {valid_times}")
+
+    if valid_times:
+        average_time = sum(valid_times) / len(valid_times)
+        print(f"Average time: {average_time} seconds for {len(valid_times)} vehicles.")
+        return average_time
+    else:
+        return 0.0
+
 
 def remove_data_for_frame(track_data, frame_number):
     """
@@ -579,7 +671,7 @@ def filter_valid_tracks(vehicle_information):
 
     valid_tracks = {}
 
-    print(f"Vehicle Information: {vehicle_information}")
+    # print(f"Vehicle Information: {vehicle_information}")
     for vehicle_id, tracks in vehicle_information.items():
 
         entry = tracks[0][5]
@@ -588,8 +680,8 @@ def filter_valid_tracks(vehicle_information):
         if (entry != None and exit != None) and (entry != exit):
             if (entry == "north" or entry == "south") and (exit == "north" or exit == "south"):
                 valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0],"cls":tracks[0][4]}
-        else: 
-            print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
+        # else: 
+            # print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
 
     return valid_tracks
 
