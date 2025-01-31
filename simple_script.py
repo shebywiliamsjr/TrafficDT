@@ -11,6 +11,7 @@ import json
 LOGGING_STARTED=False
 vehicle_present = False
 skip_frame = False
+output_folder = "frames"
 
 # Function to generate nod.xml
 def generate_nod_file(output_file):
@@ -215,18 +216,54 @@ def generate_config_file(output_file):
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
-def draw_polygonal_region(frame,regions):
+# def draw_polygonal_region(frame,regions):
+#     """
+#     Draw region of interest (polygons) for better understanding and analyzing.
+
+#     :param frame: Current frame to draw on. 
+#     :param region: Dict of defined region
+#     """
+
+#     for region, data in regions.items():
+#         points = np.array(data["points"], dtype=np.int32)
+#         color = data["color"]
+#         cv2.polylines(frame, [points], isClosed=True, color=color, thickness=2)
+#         cx, cy = np.mean(points, axis=0).astype(int)
+#         cv2.putText(
+#             frame,
+#             region.upper(),
+#             (cx - 50, cy),
+#             cv2.FONT_HERSHEY_SIMPLEX,
+#             0.6, 
+#             color, 
+#             2
+#         )
+
+
+def draw_polygonal_region(frame, regions, alpha=0.2):
     """
     Draw region of interest (polygons) for better understanding and analyzing.
-
+    
     :param frame: Current frame to draw on. 
-    :param region: Dict of defined region
+    :param regions: Dict of defined region
+    :param alpha: Alpha value for transparency (0.0 fully transparent, 1.0 fully opaque)
     """
 
     for region, data in regions.items():
         points = np.array(data["points"], dtype=np.int32)
         color = data["color"]
+        
+        color = tuple(color)
+
+        light_color = tuple(min(c + 50, 255) for c in color)
+
+        temp_frame = frame.copy()
+
+        cv2.fillPoly(temp_frame, [points], light_color)
+        cv2.addWeighted(temp_frame, alpha, frame, 1 - alpha, 0, frame)
         cv2.polylines(frame, [points], isClosed=True, color=color, thickness=2)
+
+        # Draw text in the center of the polygon
         cx, cy = np.mean(points, axis=0).astype(int)
         cv2.putText(
             frame,
@@ -237,6 +274,7 @@ def draw_polygonal_region(frame,regions):
             color, 
             2
         )
+
         
 def draw_line_region(frame, regions):
     for region, data in regions.items():
@@ -425,20 +463,20 @@ def process_video(video_path, conf_threshold=0.7):
 
     regions = {
         "north": {"points": [(width // 3, height // 10 - 50), (width // 2 + 100, height // 10 - 50) , (width // 2 + 100, height // 5), (width // 2 - 200, height // 3)], "color": (255,0,0)}, # Blue
-        "east": {"points": [(width // 2 + 150,  height // 5), (width // 2 + 550, height // 5 - 100) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (0,255,0)}, # Green
+        "east": {"points": [(width // 2 + 350,  height // 5 - 50), (width // 2 + 450, height // 5 ) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (210, 52, 235)}, # Green
         "south": {"points": [(width // 2 ,  height - 100 ), (width , height // 2) , (width , height) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
         "west": {"points": [(0,  height // 2 ), (width // 4 + 100,  height // 2 - 100) , (width // 2 , height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
     }
 
     traffic_light_zones = {
         # "west":{"points":[(width // 3 - 200 ,  height // 2 + 50 ), (width // 4 + 100,  height // 2 + 40) , (width // 4 + 100 , height - 170) , (width // 3 - 200, height - 140)], "color": (123,255,255)}, 
-        "north":{"points":[(width // 3 + 40 ,  height //  10  + 50), (width // 3 + 100,  height // 10 + 30) , (width // 2 - 50 , height // 5 + 50) , (width // 2  - 250, height // 3 - 50)], "color": (123,255,255)}, 
+        "north":{"points":[(width // 3  ,  height //  10  + 50), (width // 3 + 100,  height // 10 + 30) , (width // 2 - 50 , height // 5 + 50) , (width // 2  - 200, height // 3 )], "color": (123,255,255)}, 
     }
 
     frame_count_zone = {
-        "north": {"points": [(400, 100), (800, 100)], "color": (0, 255, 0), "Start":True},  
+        "north": {"points": [(400, 100), (800, 100)], "color": (223, 162, 224), "Start":True},  
         # "south": {"points": [(600, height - 100), (width, height - 300)], "color": (255, 0, 0), "Start": False},  
-        "south": {"points": [(600, 550), (width, 350)], "color": (255, 0, 0), "Start": False},  
+        "south": {"points": [(600, 550), (width, 350)], "color": (179, 133, 109), "Start": False},  
     }
 
     light_durations = []
@@ -567,7 +605,7 @@ def process_video(video_path, conf_threshold=0.7):
                 f"ID:{object_id} {label} {speed:.2f} km/hr",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
+                0.6,
                 (0, 255, 0),
                 2
             )
@@ -580,6 +618,9 @@ def process_video(video_path, conf_threshold=0.7):
         with open('tracking_log.json', 'w') as json_file:
             json.dump(data_to_save, json_file, indent=4)
 
+        frame_filename = os.path.join(output_folder, f"frame_{frame_count:04d}.jpg")
+
+        cv2.imwrite(frame_filename, frame)
         cv2.imshow("Vehicle Detection and Speed Estimation", frame)
         # cv2.waitKey(100)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -687,9 +728,13 @@ def filter_valid_tracks(vehicle_information):
 
 
 def main():
+    global output_folder   
 
     # Path to the video
     video_path = './Data/Bellevue_116th_NE12th__2017-09-11_07-08-32.mp4'
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)
