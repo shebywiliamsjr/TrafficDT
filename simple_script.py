@@ -583,6 +583,17 @@ def process_video(video_path, conf_threshold=0.7):
             print(f"Down: {down}")
             print(f"Up: {up}")
 
+             # Draw tracking data# Draw bounding box and annotations
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(
+                frame,
+                f"ID:{object_id} {label} {speed:.2f} km/hr",
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2
+            )
 
             if region == "north":
                 is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
@@ -598,17 +609,7 @@ def process_video(video_path, conf_threshold=0.7):
                     frame_count -= no_of_skipped_frames
                     skipped_frames = []
 
-            # Draw bounding box and annotations
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(
-                frame,
-                f"ID:{object_id} {label} {speed:.2f} km/hr",
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2
-            )
+            
 
        
         data_to_save = {
