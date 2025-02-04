@@ -1,3 +1,5 @@
+from scipy.spatial import distance
+
 import cv2
 from ultralytics import YOLO
 from ultralytics import solutions
@@ -432,6 +434,7 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
 
 # Function to process video and track vehicles
 # km/hr
+confusion_data = {}
 def process_video(video_path, conf_threshold=0.7):
     down = {}
     up = {}
@@ -485,6 +488,7 @@ def process_video(video_path, conf_threshold=0.7):
     # Initialize tracking and speed estimation variables
     track_data = {}  # vehicle_id: [(frame, cx, cy, speed, label, entry, exit), ...]
     frame_count = 0
+    past_positions={}
 
     time_count = 0
 
@@ -555,33 +559,68 @@ def process_video(video_path, conf_threshold=0.7):
                 entry_point = None
 
             # Update tracking data
-            track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
+            # track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
+
+             
+            # if region is not None and speed >= 5:
+            if object_id in track_data and len(track_data[object_id]) > 1: 
+                prev_data = track_data[object_id][-1] # Get previous position 
+                # print(f"Prev Data: {prev_data} {object_id}") 
+                prev_cx, prev_cy = prev_data[1], prev_data[2] 
+                prev_region = prev_data[5] 
+                if len(past_positions[object_id]) > 10:
+                    next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
+                    # if region != next_region:
+                    print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
+
+                    if object_id not in confusion_data: 
+                        confusion_data[object_id] = {} 
+                    confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
+
+            if object_id not in past_positions:
+                past_positions[object_id] = []
+            
+            past_positions[object_id].append((cx, cy))
+
+ 
+ 
+
+            # if object_id not in confusion_data: 
+            #     confusion_data[object_id] = {} 
+            # confusion_data[object_id][frame_count] = {"actual": region, "next_region": next_region}
+            # 
+       
+              
+
+
+            track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region)) 
+
 
             # Get the entry and exit frame count for the vehicle
             
             if cy + 7 > 100 and object_id not in down and region == "north": 
                 down[object_id] = {"start": time_count, "start_frame": frame_count}
-                print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
+                # print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
             if object_id in down:
-                print(f"Vehicle id {object_id}. Value of cy: {cy}")
+                # print(f"Vehicle id {object_id}. Value of cy: {cy}")
                 if 500 < cy + 8 :
                     down[object_id]["end_frame"] = frame_count
                     down[object_id]["end"] = time_count
-                    print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
+                    # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
 
 
-            print(f"Vehicle id {object_id} is in region {region} with cx and cy: {cx}, {cy}))")
+            # print(f"Vehicle id {object_id} is in region {region} with cx and cy: {cx}, {cy}))")
             if (cy + 7 > 500 and 600 <= cx <= width) and object_id not in up and region == "south":
                 up[object_id] = {"start": time_count, "start_frame": frame_count}
-                print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
+                # print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
             if object_id in up:
                 if  cy + 8 < 100:
                     up[object_id]["end_frame"] = frame_count
                     up[object_id]["end"] = time_count
-                    print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
+                    # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
             
-            print(f"Down: {down}")
-            print(f"Up: {up}")
+            # print(f"Down: {down}")
+            # print(f"Up: {up}")
 
              # Draw tracking data# Draw bounding box and annotations
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -595,19 +634,19 @@ def process_video(video_path, conf_threshold=0.7):
                 2
             )
 
-            if region == "north":
-                is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
+            # if region == "north":
+            #     is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
             
-            if is_skip_frame:
-                # Remove the last entry from the track data
-                skipped_frames.append(frame_count)
-                remove_data_for_frame(track_data, frame_count)
-            else: 
-                # Count the skipped frames and decrease the frame count by number of skipped frames
-                no_of_skipped_frames = len(set(skipped_frames))
-                if no_of_skipped_frames > 0:
-                    frame_count -= no_of_skipped_frames
-                    skipped_frames = []
+            # if is_skip_frame:
+            #     # Remove the last entry from the track data
+            #     skipped_frames.append(frame_count)
+            #     remove_data_for_frame(track_data, frame_count)
+            # else: 
+            #     # Count the skipped frames and decrease the frame count by number of skipped frames
+            #     no_of_skipped_frames = len(set(skipped_frames))
+            #     if no_of_skipped_frames > 0:
+            #         frame_count -= no_of_skipped_frames
+            #         skipped_frames = []
 
             
 
@@ -616,8 +655,10 @@ def process_video(video_path, conf_threshold=0.7):
             "skipped_frames": skipped_frames,
             "track_data": track_data
         }
-        with open('tracking_log.json', 'w') as json_file:
-            json.dump(data_to_save, json_file, indent=4)
+        # with open('tracking_log.json', 'w') as json_file:
+        #     json.dump(data_to_save, json_file, indent=4)
+
+        write_to_json(confusion_data, "data_for_confusion_matrix")
 
         frame_filename = os.path.join(output_folder, f"frame_{frame_count:04d}.jpg")
 
@@ -634,6 +675,131 @@ def process_video(video_path, conf_threshold=0.7):
 
     return track_data
 
+def write_to_json(data_to_save, filename):
+    with open(filename, 'w') as json_file:
+        json.dump(data_to_save, json_file, indent=4)
+
+def find_angle_distance(points, vehicle_id):
+    """
+    Find the angle of turn based on the movement trajectory of the vehicle.
+    """
+    # We consider the last 20 points and calculate the distance
+    if len(points) < 4:  # If there aren't enough points, return 'stopped'
+        print(f"Vehicle id {vehicle_id} stopped")
+        return "stopped"
+
+
+    # Calculate the covered distance
+    d = calculate_covered_distance(points[-20:])
+    if d > 30:
+        points = points[-40:]
+        size = len(points) // 4
+        points = points[::size]
+        p1, p2, p3, p4 = points[-4:]
+
+        if calculate_covered_distance([p2, p4]) > 20:
+            v1 = np.array(p2) - np.array(p1)
+            v2 = np.array(p4) - np.array(p3)
+            unit_v1 = v1 / np.linalg.norm(v1)
+            unit_v2 = v2 / np.linalg.norm(v2)
+            angle = np.degrees(np.arccos(np.clip(np.dot(unit_v1, unit_v2), -1.0, 1.0)))
+            # Check for turns based on the angle
+            print("Points", p1, p2, p3, p4)
+            print("Angle: ", angle)
+            if 0 <= angle <= 15:
+                print(f"Vehicle id {vehicle_id} straight")
+                return "straight"
+            elif 15 < angle < 90:
+                A, B, C = p1, p2, p4
+                diff = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+                if diff > 0:
+                    print(f"Vehicle id {vehicle_id} RIGHT")
+                    return "right"
+                elif diff < 0:
+                    print(f"Vehicle id {vehicle_id} LEFT")
+                    return "left"
+                else:
+                    return "straight"
+    else:
+        return "stopped"
+    
+def calculate_covered_distance(points):
+    """
+    Calculate the total distance covered by the vehicle based on the given points.
+    """
+    d = 0        
+    for i in range(len(points) - 1):
+        d += distance.euclidean(points[i], points[i + 1])
+    return d
+
+def apply_perspective_correction(point, H):
+    corrected_point = cv2.perspectiveTransform(np.array([[point]], dtype="float32"), H)
+    return corrected_point[0][0]
+
+def predict_next_region(cx, cy, prev_cx, prev_cy, current_region, regions, speed, points, vehicle_id): 
+
+    # Difference between previous and current distance
+    dx = cx - prev_cx 
+    dy = cy - prev_cy 
+    
+    # If speed is 0 (meaning red light), prediction is None
+    if speed == 0: 
+        return current_region 
+    
+   
+    angle = find_angle_distance(points, vehicle_id)
+
+
+    if angle == "stopped" and speed < 1:
+        return current_region
+    
+    if angle == "straight":
+        if abs(dy) > abs(dx):
+            if current_region == "north" and dy > 0:
+                return "south"
+            elif current_region == "south" and dy < 0:
+                return "north"
+        elif abs(dx) > abs(dy):
+            if current_region == "west" and dx > 0:
+                return "east"
+            elif current_region == "east" and dx < 0:
+                return "west"
+    elif angle == "right":
+        return predict_turn_direction(current_region, "right")
+    elif angle == "left":
+        return predict_turn_direction(current_region, "left")
+    else:
+        return current_region
+        
+    if abs(dx) > abs(dy):  
+        return "east" if dx > 0 else "west" 
+    else:  
+        return "south" if dy > 0 else "north" 
+
+def predict_turn_direction(current_region, turn_direction):
+                                                            
+    if current_region == "north":
+        if turn_direction == "left":
+            return "east"
+        elif turn_direction == "right":
+            return "west"
+    elif current_region == "south":
+        if turn_direction == "left":
+            return "west"
+        elif turn_direction == "right":
+            return "east"
+    elif current_region == "east":
+        if turn_direction == "left":
+            return "south"
+        elif turn_direction == "right":
+            return "north"
+    elif current_region == "west":
+        if turn_direction == "left":
+            return "north"
+        elif turn_direction == "right":
+            return "south"
+    
+    return current_region
 def calculate_average_time(up_data, down_data):
     valid_times = []
 
@@ -649,14 +815,14 @@ def calculate_average_time(up_data, down_data):
         if "start" in down_item and "end" in down_item and down_item["start"] > 0 and down_item["end"] > 0:
             time_taken_frames = down_item["end"] - down_item["start"]
             time_in_sec = time_taken_frames / 30.12
-            print(f"Time taken for vehicle {vehicle_id} (Down) is {time_in_sec} seconds.")
+            # print(f"Time taken for vehicle {vehicle_id} (Down) is {time_in_sec} seconds.")
             valid_times.append(time_in_sec)
 
-    print(f"Valid times: {valid_times}")
+    # print(f"Valid times: {valid_times}")
 
     if valid_times:
         average_time = sum(valid_times) / len(valid_times)
-        print(f"Average time: {average_time} seconds for {len(valid_times)} vehicles.")
+        # print(f"Average time: {average_time} seconds for {len(valid_times)} vehicles.")
         return average_time
     else:
         return 0.0
@@ -732,7 +898,8 @@ def main():
     global output_folder   
 
     # Path to the video
-    video_path = './Data/Bellevue_116th_NE12th__2017-09-11_07-08-32.mp4'
+    # video_path = './Data/Bellevue_116th_NE12th_2017-09-11_12-08-33(1) (online-video-cutter.com).mp4'
+    video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4"
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
