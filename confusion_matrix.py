@@ -1,9 +1,9 @@
 from collections import Counter
 import numpy as np
 import json
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 
-json_file_path = "data_for_cm.json"
+json_file_path = "data_for_cm_2.json"
 
 
 directions = ['east', 'west', 'north', 'south']
@@ -23,7 +23,7 @@ with open(json_file_path, 'r') as f:
     data = json.load(f)
 
 # Iterate over objects in your data and aggregate frames
-frame_interval = 50  
+frame_interval = 300  
 for obj_id, frames in data.items():
     frame_ids = list(frames.keys())
     # if obj_id == '2':
@@ -46,6 +46,7 @@ for obj_id, frames in data.items():
 
         print(f"Most frequent prediction", most_frequent_actual, most_frequent_predicted, len(most_frequent_actual), len(most_frequent_predicted))   
 
+    
         all_actuals.append(most_frequent_actual)
         all_predicted.append(most_frequent_predicted)
 
@@ -63,6 +64,9 @@ actual_integers = [direction_to_index[direction] for direction in all_actuals]
 predicted_integers = [direction_to_index[direction] for direction in all_predicted]
 
 cm_sklearn = confusion_matrix(actual_integers, predicted_integers)
+
+report = classification_report(actual_integers, predicted_integers, target_names=['East', 'West', 'North', 'South'])
+print(report)
 
 print("Confusion Matrix (sklearn):")
 print(cm_sklearn)

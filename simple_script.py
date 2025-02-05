@@ -563,19 +563,20 @@ def process_video(video_path, conf_threshold=0.7):
 
              
             # if region is not None and speed >= 5:
-            if object_id in track_data and len(track_data[object_id]) > 1: 
-                prev_data = track_data[object_id][-1] # Get previous position 
-                # print(f"Prev Data: {prev_data} {object_id}") 
-                prev_cx, prev_cy = prev_data[1], prev_data[2] 
-                prev_region = prev_data[5] 
-                if len(past_positions[object_id]) > 10:
-                    next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
-                    # if region != next_region:
-                    print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
+            if speed >= 3:
+                if object_id in track_data and len(track_data[object_id]) > 1: 
+                    prev_data = track_data[object_id][-1] # Get previous position 
+                    # print(f"Prev Data: {prev_data} {object_id}") 
+                    prev_cx, prev_cy = prev_data[1], prev_data[2] 
+                    prev_region = prev_data[5] 
+                    if len(past_positions[object_id]) > 10:
+                        next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
+                        # if region != next_region:
+                        print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
 
-                    if object_id not in confusion_data: 
-                        confusion_data[object_id] = {} 
-                    confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
+                        if object_id not in confusion_data: 
+                            confusion_data[object_id] = {} 
+                        confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
 
             if object_id not in past_positions:
                 past_positions[object_id] = []
@@ -886,8 +887,8 @@ def filter_valid_tracks(vehicle_information):
         exit = tracks[-1][6]
 
         if (entry != None and exit != None) and (entry != exit):
-            if (entry == "north" or entry == "south") and (exit == "north" or exit == "south"):
-                valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0],"cls":tracks[0][4]}
+            # if (entry == "north" or entry == "south") and (exit == "north" or exit == "south"):
+            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0],"cls":tracks[0][4]}
         # else: 
             # print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
 

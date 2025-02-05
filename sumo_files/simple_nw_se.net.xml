@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2025-02-04 15:29:06 by Eclipse SUMO netconvert Version 1.21.0
-<netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+<!-- generated on 2025-02-04 18:41:14 by Eclipse SUMO netconvert Version 1.20.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
         <node-files value="sumo_files/nod.xml"/>
@@ -13,7 +13,7 @@
         <output-file value="sumo_files/simple_nw_se.net.xml"/>
     </output>
 
-</netconvertConfiguration>
+</configuration>
 -->
 
 <net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
@@ -35,7 +35,7 @@
         <lane id=":n1_0_0" index="0" speed="3.65" length="4.67" shape="1.60,200.00 0.80,201.20 0.00,201.60 -0.80,201.20 -1.60,200.00"/>
     </edge>
     <edge id=":n3_0" function="internal">
-        <lane id=":n3_0_0" index="0" speed="3.65" length="4.67" shape="-1.60,0.00 -0.80,-1.20 0.00,-1.60 0.80,-1.20 1.60,0.00"/>
+        <lane id=":n3_0_0" index="0" speed="3.65" length="4.67" shape="-1.60,0.00 -0.80,-1.20 -0.00,-1.60 0.80,-1.20 1.60,-0.00"/>
     </edge>
 
     <edge id="center_to_north" from="center" to="n1" priority="2" type="2L45">
@@ -52,9 +52,9 @@
         <lane id="north_to_center_2" index="2" speed="45.00" length="96.00" shape="-1.60,200.00 -1.60,104.00"/>
     </edge>
     <edge id="south_to_center" from="n3" to="center" priority="3" type="3L45">
-        <lane id="south_to_center_0" index="0" speed="45.00" length="96.00" shape="8.00,0.00 8.00,96.00"/>
-        <lane id="south_to_center_1" index="1" speed="45.00" length="96.00" shape="4.80,0.00 4.80,96.00"/>
-        <lane id="south_to_center_2" index="2" speed="45.00" length="96.00" shape="1.60,0.00 1.60,96.00"/>
+        <lane id="south_to_center_0" index="0" speed="45.00" length="96.00" shape="8.00,-0.00 8.00,96.00"/>
+        <lane id="south_to_center_1" index="1" speed="45.00" length="96.00" shape="4.80,-0.00 4.80,96.00"/>
+        <lane id="south_to_center_2" index="2" speed="45.00" length="96.00" shape="1.60,-0.00 1.60,96.00"/>
     </edge>
 
     <tlLogic id="center" type="static" programID="0" offset="0">
@@ -72,7 +72,7 @@
     <junction id="n1" type="priority" x="0.00" y="200.00" incLanes="center_to_north_0 center_to_north_1" intLanes=":n1_0_0" shape="0.00,200.00 6.40,200.00 0.00,200.00">
         <request index="0" response="0" foes="0" cont="0"/>
     </junction>
-    <junction id="n3" type="priority" x="0.00" y="0.00" incLanes="center_to_south_0 center_to_south_1" intLanes=":n3_0_0" shape="0.00,0.00 -6.40,0.00 0.00,0.00">
+    <junction id="n3" type="priority" x="0.00" y="0.00" incLanes="center_to_south_0 center_to_south_1" intLanes=":n3_0_0" shape="0.00,-0.00 -6.40,-0.00 0.00,-0.00">
         <request index="0" response="0" foes="0" cont="0"/>
     </junction>
 
