@@ -1,0 +1,374 @@
+{
+    "2": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 1,
+        "cls": "car"
+    },
+    "3": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 1,
+        "cls": "car"
+    },
+    "8": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 1,
+        "cls": "car"
+    },
+    "9": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 1,
+        "cls": "car"
+    },
+    "12": {
+        "entry": "north",
+        "exit": "east",
+        "frame": 1,
+        "cls": "car"
+    },
+    "6": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 4,
+        "cls": "car"
+    },
+    "15": {
+        "entry": "south",
+        "exit": "east",
+        "frame": 8,
+        "cls": "car"
+    },
+    "18": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 48,
+        "cls": "car"
+    },
+    "22": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 117,
+        "cls": "car"
+    },
+    "24": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 118,
+        "cls": "car"
+    },
+    "32": {
+        "entry": "north",
+        "exit": "south",
+        "frame": 209,
+        "cls": "car"
+    },
+    "33": {
+        "entry": "north",
+        "exit": "east",
+        "frame": 227,
+        "cls": "car"
+    },
+    "35": {
+        "entry": "north",
+        "exit": "west",
+        "frame": 258,
+        "cls": "car"
+    },
+    "37": {
+        "entry": "south",
+        "exit": "east",
+        "frame": 268,
+        "cls": "car"
+    },
+    "38": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 294,
+        "cls": "car"
+    },
+    "40": {
+        "entry": "north",
+        "exit": "west",
+        "frame": 311,
+        "cls": "car"
+    },
+    "42": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 341,
+        "cls": "truck"
+    },
+    "44": {
+        "entry": "north",
+        "exit": "south",
+        "frame": 394,
+        "cls": "car"
+    },
+    "52": {
+        "entry": "north",
+        "exit": "east",
+        "frame": 545,
+        "cls": "car"
+    },
+    "54": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 577,
+        "cls": "car"
+    },
+    "59": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 630,
+        "cls": "car"
+    },
+    "64": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 711,
+        "cls": "truck"
+    },
+    "68": {
+        "entry": "east",
+        "exit": "south",
+        "frame": 852,
+        "cls": "car"
+    },
+    "69": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 896,
+        "cls": "car"
+    },
+    "70": {
+        "entry": "east",
+        "exit": "south",
+        "frame": 897,
+        "cls": "car"
+    },
+    "73": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 936,
+        "cls": "car"
+    },
+    "74": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 944,
+        "cls": "car"
+    },
+    "76": {
+        "entry": "east",
+        "exit": "south",
+        "frame": 961,
+        "cls": "car"
+    },
+    "78": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 969,
+        "cls": "car"
+    },
+    "82": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 1016,
+        "cls": "car"
+    },
+    "85": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 1021,
+        "cls": "car"
+    },
+    "87": {
+        "entry": "east",
+        "exit": "south",
+        "frame": 1030,
+        "cls": "car"
+    },
+    "88": {
+        "entry": "east",
+        "exit": "south",
+        "frame": 1046,
+        "cls": "car"
+    },
+    "90": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 1080,
+        "cls": "car"
+    },
+    "94": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 1122,
+        "cls": "car"
+    },
+    "97": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 1268,
+        "cls": "car"
+    },
+    "98": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 1271,
+        "cls": "car"
+    },
+    "101": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 1377,
+        "cls": "car"
+    },
+    "102": {
+        "entry": "east",
+        "exit": "north",
+        "frame": 1416,
+        "cls": "car"
+    },
+    "110": {
+        "entry": "north",
+        "exit": "west",
+        "frame": 1651,
+        "cls": "car"
+    },
+    "115": {
+        "entry": "west",
+        "exit": "east",
+        "frame": 1845,
+        "cls": "car"
+    },
+    "117": {
+        "entry": "east",
+        "exit": "west",
+        "frame": 1855,
+        "cls": "car"
+    },
+    "118": {
+        "entry": "north",
+        "exit": "east",
+        "frame": 1880,
+        "cls": "car"
+    },
+    "127": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2136,
+        "cls": "car"
+    },
+    "128": {
+        "entry": "south",
+        "exit": "west",
+        "frame": 2140,
+        "cls": "bus"
+    },
+    "134": {
+        "entry": "south",
+        "exit": "east",
+        "frame": 2200,
+        "cls": "car"
+    },
+    "135": {
+        "entry": "south",
+        "exit": "west",
+        "frame": 2201,
+        "cls": "car"
+    },
+    "137": {
+        "entry": "south",
+        "exit": "west",
+        "frame": 2286,
+        "cls": "car"
+    },
+    "144": {
+        "entry": "south",
+        "exit": "east",
+        "frame": 2586,
+        "cls": "car"
+    },
+    "145": {
+        "entry": "north",
+        "exit": "south",
+        "frame": 2624,
+        "cls": "car"
+    },
+    "148": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2657,
+        "cls": "car"
+    },
+    "154": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2720,
+        "cls": "car"
+    },
+    "156": {
+        "entry": "south",
+        "exit": "east",
+        "frame": 2724,
+        "cls": "car"
+    },
+    "157": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2733,
+        "cls": "car"
+    },
+    "164": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2801,
+        "cls": "car"
+    },
+    "169": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2835,
+        "cls": "car"
+    },
+    "170": {
+        "entry": "north",
+        "exit": "south",
+        "frame": 2854,
+        "cls": "car"
+    },
+    "173": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2889,
+        "cls": "car"
+    },
+    "178": {
+        "entry": "north",
+        "exit": "south",
+        "frame": 2945,
+        "cls": "car"
+    },
+    "179": {
+        "entry": "south",
+        "exit": "north",
+        "frame": 2947,
+        "cls": "car"
+    },
+    "181": {
+        "entry": "north",
+        "exit": "west",
+        "frame": 2972,
+        "cls": "bus"
+    },
+    "182": {
+        "entry": "north",
+        "exit": "south",
+        "frame": 2992,
+        "cls": "car"
+    }
+}

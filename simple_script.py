@@ -9,6 +9,7 @@ import math
 import numpy as np
 import json
 
+from model_data import prepare_csv
 
 LOGGING_STARTED=False
 vehicle_present = False
@@ -20,9 +21,9 @@ def generate_nod_file(output_file):
     root = ET.Element("nodes")
     ET.SubElement(root, "node", id="center", x="0", y="0", type="traffic_light") # Center
     ET.SubElement(root, "node", id="n1", x="0", y="100", type="priority") # North
-    # ET.SubElement(root, "node", id="n2", x="100", y="0", type="priority") # East
+    ET.SubElement(root, "node", id="n2", x="100", y="0", type="priority") # East
     ET.SubElement(root, "node", id="n3", x="0", y="-100", type="priority") # South
-    # ET.SubElement(root, "node", id="n4", x="-100", y="0", type="priority") # West
+    ET.SubElement(root, "node", id="n4", x="-100", y="0", type="priority") # West
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
@@ -45,19 +46,19 @@ def generate_edg_file(output_file):
         "type": "2L45"
     })  # Center to North
 
-    # ET.SubElement(root, "edge", {
-    #     "from": "n2",
-    #     "to": "center",
-    #     "id": "east_to_center",
-    #     "type": "3L45"
-    # })  # East to Center
+    ET.SubElement(root, "edge", {
+        "from": "n2",
+        "to": "center",
+        "id": "east_to_center",
+        "type": "3L45"
+    })  # East to Center
     
-    # ET.SubElement(root, "edge", {
-    #     "from": "center",
-    #     "to": "n2",
-    #     "id": "center_to_east",
-    #     "type": "2L45"
-    # })  # Center to East
+    ET.SubElement(root, "edge", {
+        "from": "center",
+        "to": "n2",
+        "id": "center_to_east",
+        "type": "2L45"
+    })  # Center to East
 
     ET.SubElement(root, "edge", {
         "from": "n3",
@@ -73,19 +74,19 @@ def generate_edg_file(output_file):
         "type": "2L45"
     })  # Center to South
 
-    # ET.SubElement(root, "edge", {
-    #     "from": "n4",
-    #     "to": "center",
-    #     "id": "west_to_center",
-    #     "type": "3L45"
-    # })  # West to Center
+    ET.SubElement(root, "edge", {
+        "from": "n4",
+        "to": "center",
+        "id": "west_to_center",
+        "type": "3L45"
+    })  # West to Center
     
-    # ET.SubElement(root, "edge", {
-    #     "from": "center",
-    #     "to": "n4",
-    #     "id": "center_to_west",
-    #     "type": "2L45"
-    # })  # Center to West
+    ET.SubElement(root, "edge", {
+        "from": "center",
+        "to": "n4",
+        "id": "center_to_west",
+        "type": "2L45"
+    })  # Center to West
 
     
     # Generate the XML tree
@@ -467,8 +468,8 @@ def process_video(video_path, conf_threshold=0.7):
     regions = {
         "north": {"points": [(width // 3, height // 10 - 50), (width // 2 + 100, height // 10 - 50) , (width // 2 + 100, height // 5), (width // 2 - 200, height // 3)], "color": (255,0,0)}, # Blue
         "east": {"points": [(width // 2 + 350,  height // 5 - 50), (width // 2 + 450, height // 5 ) , (width // 2 + 450, height // 3 + 150) , (width // 2 + 100, height // 3 - 100)], "color": (210, 52, 235)}, # Green
-        "south": {"points": [(width // 2 ,  height - 100 ), (width , height // 2) , (width , height) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
-        "west": {"points": [(0,  height // 2 ), (width // 4 + 100,  height // 2 - 100) , (width // 2 , height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
+        "south": {"points": [(width // 2 ,  height - 100 ), (width - 40 , height // 2 - 50) , (width , height) , (width // 2 - 100, height)], "color": (0,0,255)}, # Red
+        "west": {"points": [(0,  height // 2 ), (width // 4 + 130,  height // 2 - 120) , (width // 2 + 30, height - 50) , (0, height)], "color": (255,255,0)}, # Cyan
     }
 
     traffic_light_zones = {
@@ -563,25 +564,25 @@ def process_video(video_path, conf_threshold=0.7):
 
              
             # if region is not None and speed >= 5:
-            if speed >= 3:
-                if object_id in track_data and len(track_data[object_id]) > 1: 
-                    prev_data = track_data[object_id][-1] # Get previous position 
-                    # print(f"Prev Data: {prev_data} {object_id}") 
-                    prev_cx, prev_cy = prev_data[1], prev_data[2] 
-                    prev_region = prev_data[5] 
-                    if len(past_positions[object_id]) > 10:
-                        next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
-                        # if region != next_region:
-                        print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
+            # if speed >= 3:
+            #     if object_id in track_data and len(track_data[object_id]) > 1: 
+            #         prev_data = track_data[object_id][-1] # Get previous position 
+            #         # print(f"Prev Data: {prev_data} {object_id}") 
+            #         prev_cx, prev_cy = prev_data[1], prev_data[2] 
+            #         prev_region = prev_data[5] 
+            #         if len(past_positions[object_id]) > 10:
+            #             next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
+            #             # if region != next_region:
+            #             print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
 
-                        if object_id not in confusion_data: 
-                            confusion_data[object_id] = {} 
-                        confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
+            #             if object_id not in confusion_data: 
+            #                 confusion_data[object_id] = {} 
+            #             confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
 
-            if object_id not in past_positions:
-                past_positions[object_id] = []
+            # if object_id not in past_positions:
+            #     past_positions[object_id] = []
             
-            past_positions[object_id].append((cx, cy))
+            # past_positions[object_id].append((cx, cy))
 
  
  
@@ -595,6 +596,8 @@ def process_video(video_path, conf_threshold=0.7):
 
 
             track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region)) 
+
+            
 
 
             # Get the entry and exit frame count for the vehicle
@@ -656,11 +659,16 @@ def process_video(video_path, conf_threshold=0.7):
             "skipped_frames": skipped_frames,
             "track_data": track_data
         }
+
+        # Write in tracking log json file 
         # with open('tracking_log.json', 'w') as json_file:
         #     json.dump(data_to_save, json_file, indent=4)
 
-        write_to_json(confusion_data, "data_for_confusion_matrix")
+        # File for confusion matrix
+        # write_to_json(confusion_data, "data_for_confusion_matrix")
 
+
+        # Save each frame 
         frame_filename = os.path.join(output_folder, f"frame_{frame_count:04d}.jpg")
 
         cv2.imwrite(frame_filename, frame)
@@ -908,13 +916,16 @@ def main():
     # Function call to process the video, returns dict of detected vehicles
     vehicle_tracks = process_video(video_path)
 
+    prepare_csv.prepare_lstm_dataset(vehicle_tracks)
+
     vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
     valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
     vTypes = define_vehicle_types(vehicle_speeds, vehicle_tracks)
-    
 
     print(f"Len of Valid Tracks... {len(valid_vehicle_tracks)}")
     print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
+
+    write_to_json(valid_vehicle_tracks, "valid_vehicle_data")
 
     # Generate SUMO input files
     os.makedirs("sumo_files", exist_ok=True)
@@ -924,18 +935,18 @@ def main():
 
 
     entry_exit_mappings = {
-        # "route_north_to_east" : ["north","east"],
+        "route_north_to_east" : ["north","east"],
         "route_north_to_south" : ["north","south"],
-        # "route_north_to_west": ["north","west"],
-        # "route_east_to_west": ["east","west"],
-        # "route_east_to_south": ["east","south"],
-        # "route_east_to_north": ["east","north"],
-        # "route_south_to_west": ["south","west"],
+        "route_north_to_west": ["north","west"],
+        "route_east_to_west": ["east","west"],
+        "route_east_to_south": ["east","south"],
+        "route_east_to_north": ["east","north"],
+        "route_south_to_west": ["south","west"],
         "route_south_to_north": ["south","north"],
-        # "route_south_to_east": ["south","east"],
-        # "route_west_to_south": ["west","south"],
-        # "route_west_to_north": ["west","north"],
-        # "route_west_to_east": ["west","east"],
+        "route_south_to_east": ["south","east"],
+        "route_west_to_south": ["west","south"],
+        "route_west_to_north": ["west","north"],
+        "route_west_to_east": ["west","east"],
         }
 
     generate_route_file(valid_vehicle_tracks, "sumo_files/route.rou.xml",entry_exit_mappings, vTypes,vehicle_speeds) # Routes file
