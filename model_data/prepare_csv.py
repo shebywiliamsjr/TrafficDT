@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 
-def prepare_lstm_dataset(track_data, output_csv="lstm_dataset.csv"):
+def prepare_lstm_dataset(track_data, output_csv="vehicle_tracking_data.csv"):
     """
     Prepare a CSV dataset from vehicle tracking data for LSTM training.
 
@@ -39,6 +39,6 @@ def prepare_lstm_dataset(track_data, output_csv="lstm_dataset.csv"):
                 processed_data.append([vehicle_id, subset["frame"].iloc[-1], avg_x, avg_y, avg_speed, last_region])
 
     # Convert to DataFrame and save as CSV
-    columns = ["Vehicle ID", "Frame", "Avg_X_Center", "Avg_Y_Center", "Avg_Speed", "Last_Region"]
+    columns = ["Vehicle_ID", "Frame", "Avg_X_Center", "Avg_Y_Center", "Avg_Speed", "Last_Region"]
     df_final = pd.DataFrame(processed_data, columns=columns)
     df_final.to_csv(output_csv, index=False)
