@@ -64,7 +64,7 @@ def generate_edg_file(output_file):
         "from": "n3",
         "to": "center",
         "id": "south_to_center",
-        "type": "3L45"
+        "type": "4L45"
     })  # South to Center
     
     ET.SubElement(root, "edge", {
@@ -78,7 +78,7 @@ def generate_edg_file(output_file):
         "from": "n4",
         "to": "center",
         "id": "west_to_center",
-        "type": "3L45"
+        "type": "4L45"
     })  # West to Center
     
     ET.SubElement(root, "edge", {
@@ -100,6 +100,7 @@ def generate_type_file(output_file):
     root = ET.Element("types")
     ET.SubElement(root, "type", id="3L45", priority="3", numLanes="3", speed="45")
     ET.SubElement(root, "type", id="2L45", priority="2", numLanes="2", speed="45")
+    ET.SubElement(root, "type", id="4L45", priority="2", numLanes="4", speed="45")
     tree = ET.ElementTree(root)
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
@@ -211,7 +212,7 @@ def generate_config_file(output_file):
     root = ET.Element("configuration")
     input_el = ET.SubElement(root, "input")
     ET.SubElement(input_el, "net-file", value="simple_nw_se.net.xml")
-    # ET.SubElement(input_el, "net-file", value="updated_one.net.xml")
+    # ET.SubElement(input_el, "net-file", value="test_nw.net.xml")
     ET.SubElement(input_el, "route-files", value="route.rou.xml")
     time_el = ET.SubElement(root, "time")
     ET.SubElement(time_el, "begin", value="0") 
@@ -907,8 +908,8 @@ def main():
     global output_folder   
 
     # Path to the video
-    # video_path = './Data/Bellevue_116th_NE12th_2017-09-11_12-08-33(1) (online-video-cutter.com).mp4'
-    video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4"
+    video_path = './Data/Bellevue_116th_NE12th_2017-09-11_12-08-33(1) (online-video-cutter.com).mp4'
+    # video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4"
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -958,6 +959,6 @@ def main():
     print("SUMO input files generated successfully!")
 
 if __name__ == "__main__":
-    main()
-    # generate_config_file("sumo_files/sumo_config_updated.sumocfg")
+    # main()
+    generate_config_file("sumo_files/sumo_config_updated.sumocfg")
 

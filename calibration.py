@@ -98,8 +98,6 @@ def calibrate_meters_per_pixel(video_path, conf_threshold):
             # mpp_width = bus_width_m / bus_width_px
             mpp_length = bus_length_m / bus_length_px
 
-            print(f"Mpp length.. {mpp_length}")
-
             # Draw bounding box and annotations
             # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             # cv2.putText(
