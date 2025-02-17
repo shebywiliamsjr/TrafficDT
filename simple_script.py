@@ -105,7 +105,7 @@ def generate_type_file(output_file):
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
 # Function to generate rou.xml
-def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes, vehicle_speeds):
+def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes, vehicle_speeds, fps):
     """
     Generate Rou.XML file for SUMO using the vehicle tracking dara.
 
@@ -144,7 +144,7 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes,
         # Calculate departure time based on the first frame the vehicle appears
         # first_frame = tracks[0][0]
         first_frame = tracks["frame"]
-        departure_time = first_frame / 30.0  #TODO: Actual FPS is 30.12 ....
+        departure_time = first_frame / fps  #TODO: Actual FPS is 30.12 ....
 
 
         entry = tracks["entry"]
@@ -418,6 +418,8 @@ def track_traffic_light_states(frame_count, track_data, traffic_light_zones, lig
 
         LOGGING_STARTED = True
 
+        print(f"Vehicle {vehicle_id}, State: {current_state}")
+
         if len(light_durations) == 0:
             light_durations.append({"region": region, "state": current_state, "start": current_time, "end": None, "duration": None})
         elif light_durations[-1]["state"] != current_state:
@@ -475,7 +477,8 @@ def process_video(video_path, conf_threshold=0.7):
 
     traffic_light_zones = {
         # "west":{"points":[(width // 3 - 200 ,  height // 2 + 50 ), (width // 4 + 100,  height // 2 + 40) , (width // 4 + 100 , height - 170) , (width // 3 - 200, height - 140)], "color": (123,255,255)}, 
-        "north":{"points":[(width // 3  ,  height //  10  + 50), (width // 3 + 100,  height // 10 + 30) , (width // 2 - 50 , height // 5 + 50) , (width // 2  - 200, height // 3 )], "color": (123,255,255)}, 
+        # "north":{"points":[(width // 3  ,  height //  10  + 50), (width // 3 + 100,  height // 10 + 30) , (width // 2 - 50 , height // 5 + 50) , (width // 2  - 200, height // 3 )], "color": (123,255,255)}, 
+        "east": {"points": [(width // 2 + 200,  height // 5 - 10), (width // 2 + 350, height // 5 ) , (width // 2 + 250, height // 3 - 50 ) , (width // 2 + 100, height // 3 - 100)], "color": (29, 12, 35)},
     }
 
     frame_count_zone = {
@@ -494,6 +497,12 @@ def process_video(video_path, conf_threshold=0.7):
 
     time_count = 0
 
+    time_for_crop_video = 0
+
+    start_time_sec = 0
+    export_interval = 300
+    video_index = 1
+    
     # Process video frames
     for results in model.track(source=video_path, conf=conf_threshold, show=False, stream=True, verbose=False):
         frame_count += 1
@@ -502,160 +511,193 @@ def process_video(video_path, conf_threshold=0.7):
 
         time_count += 1
 
-        # Draw rectangular box around each region
-        # draw_regions(frame, regions)
-        draw_polygonal_region(frame,regions)
+        time_for_crop_video = frame_count/fps
 
-        draw_polygonal_region(frame,traffic_light_zones)
+        if time_for_crop_video - start_time_sec >= export_interval:
+            print(f"Saving XML Files at {time_for_crop_video} seconds")
+            generate_xml_files(track_data,time_for_crop_video, fps, video_index)
 
-        draw_line_region(frame, frame_count_zone)
+            track_data.clear()
+            past_positions.clear()
+            down.clear()
+            up.clear()
+            frame_count = 0
+            video_index += 1
 
+            # Reset YOLO IDs by restarting tracking
+            model = YOLO("best_1.pt")
+            # start_time_sec = time_for_crop_video
+            
+        else:
+            # Draw rectangular box around each region
+            # draw_regions(frame, regions)
+            draw_polygonal_region(frame,regions)
 
-        for box in results.boxes:
-            if box.id is None:
-                continue  # Skip untracked boxes
+            draw_polygonal_region(frame,traffic_light_zones)
 
-            object_id = int(box.id[0])
-            cls = int(box.cls[0])
-            label = model.names[cls]
-            tracked_ids.add(object_id)
-
-            if cls not in [3, 5, 8]:  
-                continue
-
-            # Box center coordinates
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            cx = (x1 + x2) / 2
-            cy = (y1 + y2) / 2
-
-            region = detect_region(cx,cy,regions)
+            draw_line_region(frame, frame_count_zone)
 
 
-            # Calculate speed
-            if object_id not in track_data:
-                speed = 0.0
-                entry_point = region
-                region = None
-            else:
-                last_frame, last_cx, last_cy, last_speed, *_ = track_data[object_id][-1]
-                frame_diff = frame_count - last_frame
+            for box in results.boxes:
+                if box.id is None:
+                    continue  # Skip untracked boxes
 
-                if frame_diff > 0:
-                    meters_per_pixel = 0.07   
-                    
-                    # Euclidean distance to calculate distance between 2 frames of the obj
-                    distance_px = math.hypot(cx - last_cx, cy - last_cy)
-                    
-                    # Pixels to meter conversion
-                    distance_m = distance_px * meters_per_pixel
-                    
-                    # Time difference in seconds
-                    time_sec = frame_diff / fps
-                    
-                    # Convert speed to kilometers per hour
-                    speed_m_per_s = distance_m / time_sec
-                    speed = speed_m_per_s * 3.6
+                object_id = int(box.id[0])
+                cls = int(box.cls[0])
+                label = model.names[cls]
+                tracked_ids.add(object_id)
+
+                if cls not in [3, 5, 8]:  
+                    continue
+
+                # Box center coordinates
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cx = (x1 + x2) / 2
+                cy = (y1 + y2) / 2
+
+                region = detect_region(cx,cy,regions)
+
+
+                # Calculate speed
+                if object_id not in track_data:
+                    speed = 0.0
+                    entry_point = region
+                    region = None
                 else:
-                    speed = last_speed
+                    last_frame, last_cx, last_cy, last_speed, *_ = track_data[object_id][-1]
+                    frame_diff = frame_count - last_frame
+
+                    if frame_diff > 0:
+                        meters_per_pixel = 0.07   
+                        
+                        # Euclidean distance to calculate distance between 2 frames of the obj
+                        distance_px = math.hypot(cx - last_cx, cy - last_cy)
+                        
+                        # Pixels to meter conversion
+                        distance_m = distance_px * meters_per_pixel
+                        
+                        # Time difference in seconds
+                        time_sec = frame_diff / fps
+                        
+                        # Convert speed to kilometers per hour
+                        speed_m_per_s = distance_m / time_sec
+                        speed = speed_m_per_s * 3.6
+                    else:
+                        speed = last_speed
+                    
+                    entry_point = None
+
+                # Update tracking data
+                # track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
+
                 
-                entry_point = None
+                # if region is not None and speed >= 5:
+                # if speed >= 3:
+                #     if object_id in track_data and len(track_data[object_id]) > 1: 
+                #         prev_data = track_data[object_id][-1] # Get previous position 
+                #         # print(f"Prev Data: {prev_data} {object_id}") 
+                #         prev_cx, prev_cy = prev_data[1], prev_data[2] 
+                #         prev_region = prev_data[5] 
+                #         if len(past_positions[object_id]) > 10:
+                #             next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
+                #             # if region != next_region:
+                #             print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
 
-            # Update tracking data
-            # track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region))
+                #             if object_id not in confusion_data: 
+                #                 confusion_data[object_id] = {} 
+                #             confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
 
-             
-            # if region is not None and speed >= 5:
-            # if speed >= 3:
-            #     if object_id in track_data and len(track_data[object_id]) > 1: 
-            #         prev_data = track_data[object_id][-1] # Get previous position 
-            #         # print(f"Prev Data: {prev_data} {object_id}") 
-            #         prev_cx, prev_cy = prev_data[1], prev_data[2] 
-            #         prev_region = prev_data[5] 
-            #         if len(past_positions[object_id]) > 10:
-            #             next_region = predict_next_region(cx, cy, prev_cx, prev_cy, region, regions, speed, past_positions[object_id], object_id) 
-            #             # if region != next_region:
-            #             print(f"Vehicle ID {object_id} is in {region}, likely moving to {next_region}") 
+                # if object_id not in past_positions:
+                #     past_positions[object_id] = []
+                
+                # past_positions[object_id].append((cx, cy))
 
-            #             if object_id not in confusion_data: 
-            #                 confusion_data[object_id] = {} 
-            #             confusion_data[object_id][frame_count] = {"actual": region, "next": next_region} 
+    
+    
 
-            # if object_id not in past_positions:
-            #     past_positions[object_id] = []
-            
-            # past_positions[object_id].append((cx, cy))
-
- 
- 
-
-            # if object_id not in confusion_data: 
-            #     confusion_data[object_id] = {} 
-            # confusion_data[object_id][frame_count] = {"actual": region, "next_region": next_region}
-            # 
-       
-              
+                # if object_id not in confusion_data: 
+                #     confusion_data[object_id] = {} 
+                # confusion_data[object_id][frame_count] = {"actual": region, "next_region": next_region}
+                # 
+        
+                
 
 
-            track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region)) 
+                track_data.setdefault(object_id, []).append((frame_count, cx, cy, speed, label, entry_point, region)) 
 
-            
-
-
-            # Get the entry and exit frame count for the vehicle
-            
-            if cy + 7 > 100 and object_id not in down and region == "north": 
-                down[object_id] = {"start": time_count, "start_frame": frame_count}
-                # print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
-            if object_id in down:
-                # print(f"Vehicle id {object_id}. Value of cy: {cy}")
-                if 500 < cy + 8 :
-                    down[object_id]["end_frame"] = frame_count
-                    down[object_id]["end"] = time_count
-                    # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
+                
 
 
-            # print(f"Vehicle id {object_id} is in region {region} with cx and cy: {cx}, {cy}))")
-            if (cy + 7 > 500 and 600 <= cx <= width) and object_id not in up and region == "south":
-                up[object_id] = {"start": time_count, "start_frame": frame_count}
-                # print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
-            if object_id in up:
-                if  cy + 8 < 100:
-                    up[object_id]["end_frame"] = frame_count
-                    up[object_id]["end"] = time_count
-                    # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
-            
-            # print(f"Down: {down}")
-            # print(f"Up: {up}")
+                # Get the entry and exit frame count for the vehicle
+                
+                if cy + 7 > 100 and object_id not in down and region == "north": 
+                    down[object_id] = {"start": time_count, "start_frame": frame_count}
+                    # print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
+                if object_id in down:
+                    # print(f"Vehicle id {object_id}. Value of cy: {cy}")
+                    if 500 < cy + 8 :
+                        down[object_id]["end_frame"] = frame_count
+                        down[object_id]["end"] = time_count
+                        # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
 
-             # Draw tracking data# Draw bounding box and annotations
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(
-                frame,
-                f"ID:{object_id} {label} {speed:.2f} km/hr",
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2
-            )
 
-            # if region == "north":
-            #     is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
-            
-            # if is_skip_frame:
-            #     # Remove the last entry from the track data
-            #     skipped_frames.append(frame_count)
-            #     remove_data_for_frame(track_data, frame_count)
-            # else: 
-            #     # Count the skipped frames and decrease the frame count by number of skipped frames
-            #     no_of_skipped_frames = len(set(skipped_frames))
-            #     if no_of_skipped_frames > 0:
-            #         frame_count -= no_of_skipped_frames
-            #         skipped_frames = []
+                # print(f"Vehicle id {object_id} is in region {region} with cx and cy: {cx}, {cy}))")
+                if (cy + 7 > 500 and 600 <= cx <= width) and object_id not in up and region == "south":
+                    up[object_id] = {"start": time_count, "start_frame": frame_count}
+                    # print(f"Vehicle id {object_id} entered the zone at frame {frame_count}.")
+                if object_id in up:
+                    if  cy + 8 < 100:
+                        up[object_id]["end_frame"] = frame_count
+                        up[object_id]["end"] = time_count
+                        # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
+                
+                # print(f"Down: {down}")
+                # print(f"Up: {up}")
 
-            
+                # Draw tracking data# Draw bounding box and annotations
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    f"ID:{object_id} {label} {speed:.2f} km/hr",
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (0, 255, 0),
+                    2
+                )
 
-       
+                # if region == "north":
+                #     is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
+                
+                # if is_skip_frame:
+                #     # Remove the last entry from the track data
+                #     skipped_frames.append(frame_count)
+                #     remove_data_for_frame(track_data, frame_count)
+                # else: 
+                #     # Count the skipped frames and decrease the frame count by number of skipped frames
+                #     no_of_skipped_frames = len(set(skipped_frames))
+                #     if no_of_skipped_frames > 0:
+                #         frame_count -= no_of_skipped_frames
+                #         skipped_frames = []
+
+
+                # if region == "east":
+                #     is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
+                
+                # if is_skip_frame:
+                #     # Remove the last entry from the track data
+                #     skipped_frames.append(frame_count)
+                #     remove_data_for_frame(track_data, frame_count)
+                # else: 
+                #     # Count the skipped frames and decrease the frame count by number of skipped frames
+                #     no_of_skipped_frames = len(set(skipped_frames))
+                #     if no_of_skipped_frames > 0:
+                #         frame_count -= no_of_skipped_frames
+                #         skipped_frames = []
+
+                
+
+        
         data_to_save = {
             "skipped_frames": skipped_frames,
             "track_data": track_data
@@ -683,7 +725,7 @@ def process_video(video_path, conf_threshold=0.7):
 
     calculate_average_time(up, down)
 
-    return track_data
+    return track_data, fps
 
 def write_to_json(data_to_save, filename):
     with open(filename, 'w') as json_file:
@@ -810,6 +852,7 @@ def predict_turn_direction(current_region, turn_direction):
             return "south"
     
     return current_region
+
 def calculate_average_time(up_data, down_data):
     valid_times = []
 
@@ -897,7 +940,8 @@ def filter_valid_tracks(vehicle_information):
 
         if (entry != None and exit != None) and (entry != exit):
             # if (entry == "north" or entry == "south") and (exit == "north" or exit == "south"):
-            valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0],"cls":tracks[0][4]}
+            # if (entry == "east" or entry == "west") and (exit == "east" or exit == "west"):
+                valid_tracks[vehicle_id] = {"entry": entry, "exit": exit, "frame":tracks[0][0],"cls":tracks[0][4]}
         # else: 
             # print(f"Vehicle {vehicle_id} disregarded: entry={entry} and exit={exit}")
 
@@ -908,16 +952,17 @@ def main():
     global output_folder   
 
     # Path to the video
-    video_path = './Data/Bellevue_116th_NE12th_2017-09-11_12-08-33(1) (online-video-cutter.com).mp4'
-    # video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_12-08-33.mp4"
+    # video_path = './Data/Bellevue_116th_NE12th__2017-09-11_07-08-32.mp4'
+    # video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_08-08-50.mp4"
+    video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_09-08-31.mp4"
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
     # Function call to process the video, returns dict of detected vehicles
-    vehicle_tracks = process_video(video_path)
+    vehicle_tracks, fps = process_video(video_path)
 
-    prepare_csv.prepare_lstm_dataset(vehicle_tracks)
+    # prepare_csv.prepare_lstm_dataset(vehicle_tracks)
 
     vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
     valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
@@ -950,7 +995,7 @@ def main():
         "route_west_to_east": ["west","east"],
         }
 
-    generate_route_file(valid_vehicle_tracks, "sumo_files/route.rou.xml",entry_exit_mappings, vTypes,vehicle_speeds) # Routes file
+    generate_route_file(valid_vehicle_tracks, "sumo_files/route.rou.xml",entry_exit_mappings, vTypes,vehicle_speeds, fps) # Routes file
     generate_config_file("sumo_files/sumo_config.sumocfg") # Config File
 
     # Generate Network File
@@ -958,7 +1003,52 @@ def main():
 
     print("SUMO input files generated successfully!")
 
+def generate_xml_files(vehicle_tracks, time, fps, video_index):
+    print("vehicles", vehicle_tracks)
+    interval = 300
+    vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
+    valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
+    vTypes = define_vehicle_types(vehicle_speeds, vehicle_tracks)
+
+    print(f"Time iss{time}, for Video index {video_index}")
+    print(f"Len of Valid Tracks... {len(valid_vehicle_tracks)}")
+    print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
+    time = int(time/interval)
+
+    write_to_json(valid_vehicle_tracks, "valid_vehicle_data")
+
+    folder_path = f"sumo_files/Bellevue_116th_NE12th__2017-09-11_09-08-31/2Min/Video_{video_index}"
+    # Generate SUMO input files
+    os.makedirs(folder_path, exist_ok=True)
+    generate_nod_file(f"{folder_path}/nod.xml") # Node file
+    generate_edg_file(f"{folder_path}/edg.xml") # Edges file
+    generate_type_file(f"{folder_path}/type.xml") # Types file
+
+
+    entry_exit_mappings = {
+        "route_north_to_east" : ["north","east"],
+        "route_north_to_south" : ["north","south"],
+        "route_north_to_west": ["north","west"],
+        "route_east_to_west": ["east","west"],
+        "route_east_to_south": ["east","south"],
+        "route_east_to_north": ["east","north"],
+        "route_south_to_west": ["south","west"],
+        "route_south_to_north": ["south","north"],
+        "route_south_to_east": ["south","east"],
+        "route_west_to_south": ["west","south"],
+        "route_west_to_north": ["west","north"],
+        "route_west_to_east": ["west","east"],
+        }
+
+    generate_route_file(valid_vehicle_tracks, f"{folder_path}/route.rou.xml",entry_exit_mappings, vTypes,vehicle_speeds, fps) # Routes file
+    generate_config_file(f"{folder_path}/sumo_config.sumocfg") # Config File
+
+    # Generate Network File
+    os.system(f"netconvert --node-files {folder_path}/nod.xml --edge-files {folder_path}/edg.xml --type-files {folder_path}/type.xml -o {folder_path}/simple_nw_se.net.xml")
+
+    print("SUMO input files generated successfully!")
+
 if __name__ == "__main__":
-    # main()
-    generate_config_file("sumo_files/sumo_config_updated.sumocfg")
+    main()
+    # generate_config_file("sumo_files/sumo_config_updated.sumocfg")
 
