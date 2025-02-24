@@ -144,7 +144,7 @@ def generate_route_file(vehicle_tracks, output_file, entry_exit_mapping, vTypes,
         # Calculate departure time based on the first frame the vehicle appears
         # first_frame = tracks[0][0]
         first_frame = tracks["frame"]
-        departure_time = first_frame / fps  #TODO: Actual FPS is 30.12 ....
+        departure_time = first_frame / fps 
 
 
         entry = tracks["entry"]
@@ -180,18 +180,6 @@ def define_vehicle_types(vehicle_speeds, vehicle_information):
     }
 
     v_types = {}
-
-    # for spped in set(vehicle_speeds.values()):
-    #     print("TYPE .... ", vehicle_information[veh])
-    #     v_types[f"vType_{spped}"] = {
-    #         "id":f"vType_{spped}", 
-    #         "accel":"1.0", 
-    #         "decel":"5.0", 
-    #         "sigma":"0.0", 
-    #         "length":"5", 
-    #         "maxSpeed":str(spped / 3.6),
-    #     }
-    # return v_types
 
     for vehicle_id, spped in vehicle_speeds.items():
         cls = vehicle_information[vehicle_id][0][4]
@@ -500,7 +488,7 @@ def process_video(video_path, conf_threshold=0.7):
     time_for_crop_video = 0
 
     start_time_sec = 0
-    export_interval = 300
+    export_interval = 360
     video_index = 1
     
     # Process video frames
@@ -650,9 +638,6 @@ def process_video(video_path, conf_threshold=0.7):
                         up[object_id]["end_frame"] = frame_count
                         up[object_id]["end"] = time_count
                         # print(f"Vehicle id {object_id} exited the zone at frame {frame_count}.")
-                
-                # print(f"Down: {down}")
-                # print(f"Up: {up}")
 
                 # Draw tracking data# Draw bounding box and annotations
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -756,19 +741,15 @@ def find_angle_distance(points, vehicle_id):
             unit_v2 = v2 / np.linalg.norm(v2)
             angle = np.degrees(np.arccos(np.clip(np.dot(unit_v1, unit_v2), -1.0, 1.0)))
             # Check for turns based on the angle
-            print("Points", p1, p2, p3, p4)
-            print("Angle: ", angle)
+          
             if 0 <= angle <= 15:
-                print(f"Vehicle id {vehicle_id} straight")
                 return "straight"
             elif 15 < angle < 90:
                 A, B, C = p1, p2, p4
                 diff = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
                 if diff > 0:
-                    print(f"Vehicle id {vehicle_id} RIGHT")
                     return "right"
                 elif diff < 0:
-                    print(f"Vehicle id {vehicle_id} LEFT")
                     return "left"
                 else:
                     return "straight"
@@ -954,7 +935,7 @@ def main():
     # Path to the video
     # video_path = './Data/Bellevue_116th_NE12th__2017-09-11_07-08-32.mp4'
     # video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_08-08-50.mp4"
-    video_path = "./Data/Bellevue_150th_Newport__2017-09-10_18-08-24 (1).mp4"
+    video_path = "./Data/Bellevue_150th_Newport__2017-09-11_17-08-32.mp4"
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -1005,19 +986,16 @@ def main():
 
 def generate_xml_files(vehicle_tracks, time, fps, video_index):
     print("vehicles", vehicle_tracks)
-    interval = 300
+    interval = 360
     vehicle_speeds = calculate_vehicle_speeds(vehicle_tracks)
     valid_vehicle_tracks = filter_valid_tracks(vehicle_tracks)
     vTypes = define_vehicle_types(vehicle_speeds, vehicle_tracks)
 
-    print(f"Time iss{time}, for Video index {video_index}")
-    print(f"Len of Valid Tracks... {len(valid_vehicle_tracks)}")
-    print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
     time = int(time/interval)
 
     write_to_json(valid_vehicle_tracks, "valid_vehicle_data")
 
-    folder_path = f"sumo_files/150_NE/5Min/Video_{video_index}"
+    folder_path = f"sumo_files/Bellevue_150th_Newport__2017-09-11_17-08-32/6Min/Video_{video_index}"
     # Generate SUMO input files
     os.makedirs(folder_path, exist_ok=True)
     generate_nod_file(f"{folder_path}/nod.xml") # Node file
