@@ -1,0 +1,23 @@
+import xml.etree.ElementTree as ET
+
+def modify_depart_times(xml_file, delta, output_file):
+    """
+    Reads an XML file, modifies the 'depart' value by adding or subtracting a given delta, and writes the output.
+
+    :param xml_file: Path to the input XML file.
+    :param delta: The value to add (or subtract if negative) to the depart attribute.
+    :param output_file: Path to save the modified XML file.
+    """
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+
+    for vehicle in root.findall("vehicle"):
+        depart_value = float(vehicle.get("depart", 0))
+        new_depart_value = max(0, depart_value + delta)
+        vehicle.set("depart", f"{new_depart_value:.2f}")  
+
+    tree.write(output_file, encoding="utf-8", xml_declaration=True)
+
+path="/Users/ull/Documents/GRA/TRAFFIC-Project/TrafficDT/sumo_files/Bellevue_116th_NE12th_2017-09-10_19-08-25/6Min/Video_2/route.rou.xml"
+path_ouput = "/Users/ull/Documents/GRA/TRAFFIC-Project/TrafficDT/sumo_files/Bellevue_116th_NE12th_2017-09-10_19-08-25/6Min/Video_2/2.rou.xml"
+modify_depart_times(path, 360, path_ouput)  
