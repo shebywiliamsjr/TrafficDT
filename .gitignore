@@ -1,0 +1,13 @@
+logs/
+*.log
+
+data/
+
+.vscode
+.DS_Store
+
+*.json
+
+frames/
+
+*.json

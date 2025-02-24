@@ -1,2 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<configuration><input><net-file value="yolo11_road_network.net.xml" /><route-files value="yolo11_car_routes.rou.xml" /></input><time><begin value="0" /><end value="1000" /></time></configuration>

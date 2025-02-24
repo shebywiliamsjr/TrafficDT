@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<routes>
+	<vType id="vType_car_7.561528341885294" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="2.1004245394125816" />
+	<vType id="vType_car_8.32148615252092" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="2.3115239312558113" />
+	<vType id="vType_car_8.35804812574484" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="2.3216800349291224" />
+	<vType id="vType_car_5.284334789801276" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="1.467870774944799" />
+	<vType id="vType_car_4.924399685018284" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="1.3678888013939678" />
+	<vType id="vType_car_12.531872814803357" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="3.4810757818898215" />
+	<vType id="vType_car_61.199409218047606" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="16.999835893902112" />
+	<vType id="vType_car_18.56851052953001" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="5.157919591536113" />
+	<vType id="vType_car_15.22330627759329" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="4.228696188220358" />
+	<vType id="vType_car_4.7239973075782205" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="1.3122214743272835" />
+	<vType id="vType_car_16.89080265337817" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="4.691889625938381" />
+	<vType id="vType_car_16.60394216822693" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="4.612206157840814" />
+	<vType id="vType_car_9.316891346100913" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="2.58802537391692" />
+	<vType id="vType_car_29.573006724649336" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="8.21472409018037" />
+	<vType id="vType_car_10.243094792107131" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="2.8453041089186475" />
+	<vType id="vType_bus_20.53257425936965" accel="1.0" decel="5.0" sigma="0.0" length="13" maxSpeed="5.703492849824903" />
+	<vType id="vType_car_20.87893140918096" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="5.799703169216934" />
+	<vType id="vType_car_4.293194175162552" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="1.1925539375451533" />
+	<vType id="vType_car_11.655941347381892" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="3.2377614853838588" />
+	<vType id="vType_car_36.573981923819844" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="10.15943942328329" />
+	<vType id="vType_car_10.997872223246715" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="3.0549645064574205" />
+	<vType id="vType_car_14.534896616608414" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="4.037471282391226" />
+	<vType id="vType_car_16.28522682509072" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="4.523674118080756" />
+	<vType id="vType_car_19.681400600516326" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="5.467055722365646" />
+	<vType id="vType_car_20.696608136108697" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="5.749057815585749" />
+	<vType id="vType_car_5.027664693568883" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="1.3965735259913563" />
+	<vType id="vType_car_33.73907595704624" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="9.371965543623956" />
+	<vType id="vType_car_30.331061172292117" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="8.425294770081143" />
+	<vType id="vType_car_54.30946967280302" accel="1.0" decel="5.0" sigma="0.0" length="4.5" maxSpeed="15.085963798000838" />
+	<route id="route_north_to_east" edges="north_to_center center_to_east" />
+	<route id="route_north_to_south" edges="north_to_center center_to_south" />
+	<route id="route_north_to_west" edges="north_to_center center_to_west" />
+	<route id="route_east_to_west" edges="east_to_center center_to_west" />
+	<route id="route_east_to_south" edges="east_to_center center_to_south" />
+	<route id="route_east_to_north" edges="east_to_center center_to_north" />
+	<route id="route_south_to_west" edges="south_to_center center_to_west" />
+	<route id="route_south_to_north" edges="south_to_center center_to_north" />
+	<route id="route_south_to_east" edges="south_to_center center_to_east" />
+	<route id="route_west_to_south" edges="west_to_center center_to_south" />
+	<route id="route_west_to_north" edges="west_to_center center_to_north" />
+	<route id="route_west_to_east" edges="west_to_center center_to_east" />
+	<vehicle id="veh85" type="vType_car_7.561528341885294" route="route_east_to_north" depart="0.03" />
+	<vehicle id="veh90" type="vType_car_8.32148615252092" route="route_east_to_north" depart="0.03" />
+	<vehicle id="veh93" type="vType_car_8.35804812574484" route="route_east_to_north" depart="0.03" />
+	<vehicle id="veh99" type="vType_car_18.56851052953001" route="route_north_to_west" depart="1.53" />
+	<vehicle id="veh100" type="vType_car_15.22330627759329" route="route_north_to_east" depart="2.70" />
+	<vehicle id="veh102" type="vType_car_16.89080265337817" route="route_north_to_south" depart="6.43" />
+	<vehicle id="veh103" type="vType_car_16.60394216822693" route="route_north_to_east" depart="9.37" />
+	<vehicle id="veh105" type="vType_car_9.316891346100913" route="route_east_to_north" depart="10.34" />
+	<vehicle id="veh106" type="vType_car_29.573006724649336" route="route_north_to_south" depart="13.60" />
+	<vehicle id="veh107" type="vType_car_10.243094792107131" route="route_east_to_north" depart="14.67" />
+	<vehicle id="veh109" type="vType_bus_20.53257425936965" route="route_north_to_east" depart="22.40" />
+	<vehicle id="veh110" type="vType_car_20.87893140918096" route="route_north_to_west" depart="22.70" />
+	<vehicle id="veh112" type="vType_car_11.655941347381892" route="route_north_to_east" depart="25.14" />
+	<vehicle id="veh114" type="vType_car_36.573981923819844" route="route_north_to_south" depart="25.84" />
+	<vehicle id="veh119" type="vType_car_14.534896616608414" route="route_south_to_north" depart="30.47" />
+	<vehicle id="veh120" type="vType_car_16.28522682509072" route="route_north_to_east" depart="33.84" />
+	<vehicle id="veh121" type="vType_car_19.681400600516326" route="route_south_to_north" depart="34.21" />
+	<vehicle id="veh126" type="vType_car_33.73907595704624" route="route_west_to_east" depart="52.11" />
+	<vehicle id="veh127" type="vType_car_30.331061172292117" route="route_east_to_west" depart="54.94" />
+</routes>

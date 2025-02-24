@@ -1,2 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<routes><vType id="car" accel="0.8" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="16.67" guiShape="passenger" /></routes>

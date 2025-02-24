@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<edges><edge from="n1" to="center" id="north_to_center" type="3L45" /><edge from="center" to="n1" id="center_to_north" type="2L45" /><edge from="n2" to="center" id="east_to_center" type="3L45" /><edge from="center" to="n2" id="center_to_east" type="2L45" /><edge from="n3" to="center" id="south_to_center" type="4L45" /><edge from="center" to="n3" id="center_to_south" type="2L45" /><edge from="n4" to="center" id="west_to_center" type="4L45" /><edge from="center" to="n4" id="center_to_west" type="2L45" /></edges>
