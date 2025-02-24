@@ -12,5 +12,3 @@ The generated XML files will be stored in the sumo_files directory.
 
 5. SUMO Configuration
 The .sumocfg file is the SUMO configuration file used to run SUMO simulations.
-
-Let me know if you need further refinements! 
