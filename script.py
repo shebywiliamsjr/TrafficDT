@@ -449,7 +449,7 @@ def process_video(video_path, conf_threshold=0.3):
 
         # Draw rectangular box around each region
         # draw_regions(frame, regions)
-        draw_polygonal_region(frame,regions)
+        # draw_polygonal_region(frame,regions)
 
         # draw_polygonal_region(frame,traffic_light_zones)
 
@@ -522,17 +522,17 @@ def process_video(video_path, conf_threshold=0.3):
             # print(traffic_light_states)
 
             # Draw bounding box and annotations
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(
-                frame,
-                # f"ID:{object_id} {label} {speed:.2f} km/hr",
-                f"ID: {object_id}",
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 255, 0),
-                2
-            )
+            # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            # cv2.putText(
+            #     frame,
+            #     # f"ID:{object_id} {label} {speed:.2f} km/hr",
+            #     f"ID: {object_id}",
+            #     (x1, y1 - 10),
+            #     cv2.FONT_HERSHEY_SIMPLEX,
+            #     0.5,
+            #     (0, 255, 0),
+            #     2
+            # )
         cv2.imshow("Vehicle Detection and Speed Estimation", frame)
         # cv2.waitKey(100)
         if cv2.waitKey(1) & 0xFF == ord('q'):

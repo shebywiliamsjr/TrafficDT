@@ -495,11 +495,11 @@ def process_video(video_path, conf_threshold=0.7):
         else:
             # Draw rectangular box around each region
             # draw_regions(frame, regions)
-            draw_polygonal_region(frame,regions)
+            # draw_polygonal_region(frame,regions)
 
-            draw_polygonal_region(frame,traffic_light_zones)
+            # draw_polygonal_region(frame,traffic_light_zones)
 
-            draw_line_region(frame, frame_count_zone)
+            # draw_line_region(frame, frame_count_zone)
 
 
             for box in results.boxes:
@@ -618,16 +618,16 @@ def process_video(video_path, conf_threshold=0.7):
            
 
                 # Draw tracking data# Draw bounding box and annotations
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(
-                    frame,
-                    f"ID:{object_id} {label} {speed:.2f} km/hr",
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (0, 255, 0),
-                    2
-                )
+                # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                # cv2.putText(
+                #     frame,
+                #     f"ID:{object_id} {label} {speed:.2f} km/hr",
+                #     (x1, y1 - 10),
+                #     cv2.FONT_HERSHEY_SIMPLEX,
+                #     0.6,
+                #     (0, 255, 0),
+                #     2
+                # )
 
                 # if region == "north":
                 #     is_skip_frame = track_traffic_light_states(frame_count,track_data, traffic_light_zones, light_durations,fps, tracked_ids)
@@ -911,7 +911,7 @@ def main():
     global output_folder   
 
     # Path to the video
-    video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_08-08-50.mp4"
+    video_path = "./Data/Bellevue_116th_NE12th__2017-09-11_09-08-31.mp4"
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -967,7 +967,6 @@ def generate_xml_files(vehicle_tracks, time, fps, video_index):
     print(f"Len of acutal vehicles detected... {len(vehicle_tracks)}")
     time = int(time/interval)
 
-    write_to_json(valid_vehicle_tracks, "valid_vehicle_data")
 
     folder_path = f"sumo_files/Bellevue_116th_NE12th__2017-09-11_14-08-35/2Min/Video_{video_index}"
     # Generate SUMO input files
